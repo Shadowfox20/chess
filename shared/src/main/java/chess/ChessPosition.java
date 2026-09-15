@@ -11,6 +11,11 @@ public class ChessPosition {
     private final int col;
 
     public ChessPosition(int row, int col) {
+        /*
+        if (row > 8 || row < 1 || col > 8 || col < 1) {
+            throw new InvalidMoveException("position out of bounds");
+        }
+        */
         this.row = row;
         this.col = col;
     }
@@ -43,5 +48,9 @@ public class ChessPosition {
         }
         ChessPosition other = (ChessPosition) obj;
         return row == other.getRow() && col == other.getColumn();
+    }
+
+    public boolean inBounds() {
+        return row <= 8 && row >= 1 && col <= 8 && col >= 1;
     }
 }

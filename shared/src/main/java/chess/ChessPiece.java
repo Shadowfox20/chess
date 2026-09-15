@@ -1,6 +1,6 @@
 package chess;
 
-import java.util.Collection;
+import java.util.*;
 
 /**
  * Represents a single chess piece
@@ -51,7 +51,73 @@ public class ChessPiece {
      * @return Collection of valid moves
      */
     public Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition) {
-        throw new RuntimeException("Not implemented");
+        HashSet<ChessMove> validMoves = new HashSet<ChessMove>();
+        var currentCol = myPosition.getColumn();
+        var currentRow = myPosition.getRow();
+        switch(type) {
+            case PAWN:
+                var targetRow = currentRow;
+                if (pieceColor == ChessGame.TeamColor.WHITE) {
+                    targetRow += 1;
+                } else {
+                    targetRow -= 1;
+                }
+                ArrayList<ChessPiece.PieceType> promotions = new ArrayList<>(1);
+                promotions.add(null);
+                if (targetRow == 1 || targetRow == 8) {
+                    promotions.set(0, PieceType.KNIGHT);
+                    promotions.add(PieceType.BISHOP);
+                    promotions.add(PieceType.ROOK);
+                    promotions.add(PieceType.QUEEN);
+                }
+                ChessPosition dest = new ChessPosition(targetRow, currentCol);
+                ChessPiece target = board.getPiece(dest);
+                if (target == null) {
+                    for (PieceType promotion : promotions) {
+                        validMoves.add(new ChessMove(myPosition, dest, promotion));
+                    }
+                }
+                if (currentCol != 1) {
+                    dest = new ChessPosition(targetRow, currentCol - 1);
+                    target = board.getPiece(dest);
+                    if (target != null && target.getTeamColor() != pieceColor) {
+                        for (PieceType promotion : promotions) {
+                            validMoves.add(new ChessMove(myPosition, dest, promotion));
+                        }
+                    }
+                }
+                if (currentCol != 8) {
+                    dest = new ChessPosition(targetRow, currentCol + 1);
+                    target = board.getPiece(dest);
+                    if (target != null && target.getTeamColor() != pieceColor) {
+                        for (PieceType promotion : promotions) {
+                            validMoves.add(new ChessMove(myPosition, dest, promotion));
+                        }
+                    }
+                }
+            case KNIGHT:
+                ChessPosition[] sight = {
+                    new ChessPosition(currentRow + 1, currentCol + 2),
+                    new ChessPosition(currentRow + 1, currentCol - 2),
+                    new ChessPosition(currentRow - 1, currentCol + 2),
+                    new ChessPosition(currentRow - 1, currentCol - 2),
+                    new ChessPosition(currentRow + 2, currentCol + 1),
+                    new ChessPosition(currentRow + 2, currentCol - 1),
+                    new ChessPosition(currentRow - 2, currentCol + 1),
+                    new ChessPosition(currentRow - 2, currentCol - 1)
+                };
+                for (int i=0; i<8; i++) {
+                    dest = sight[i];
+                    if (!dest.inBounds()) {
+                        continue;
+                    }
+                    target = board.getPiece(dest);
+                    if (target == null || target.getTeamColor() != pieceColor) {
+                        validMoves.add(new ChessMove(myPosition, dest, null));
+                    }
+                }
+        }
+        return validMoves;
     }
 
     @Override

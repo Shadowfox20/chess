@@ -29,7 +29,7 @@ public class ChessMove {
      * @return ChessPosition of ending location
      */
     public ChessPosition getEndPosition() {
-        return  endPosition;
+        return endPosition;
     }
 
     /**
