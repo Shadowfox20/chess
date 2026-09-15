@@ -56,7 +56,7 @@ public class ChessPiece {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == null || obj.getClass() == ChessPiece.class) {
+        if (obj != null && obj.getClass() == ChessPiece.class) {
             return this.hashCode() == obj.hashCode();
         }
         return false;
@@ -64,6 +64,6 @@ public class ChessPiece {
 
     @Override
     public int hashCode() {
-        return (31 * pieceColor.toString().hashCode()) + (79 * type.toString().hashCode());
+        return (31 * pieceColor.hashCode()) + (79 * type.hashCode());
     }
 }
