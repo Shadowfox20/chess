@@ -51,11 +51,12 @@ public class ChessPiece {
      * @return Collection of valid moves
      */
     public Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition) {
-        HashSet<ChessMove> validMoves = new HashSet<ChessMove>();
+        HashSet<ChessMove> validMoves = new HashSet<>();
         var currentCol = myPosition.getColumn();
         var currentRow = myPosition.getRow();
         ChessPosition dest;
         ChessPiece target;
+        ChessPosition[] sight;
         switch(type) {
             case PAWN:
                 var targetRow = currentRow;
@@ -97,8 +98,9 @@ public class ChessPiece {
                         }
                     }
                 }
+                break;
             case KNIGHT:
-                ChessPosition[] sight = {
+                sight = new ChessPosition[]{
                     new ChessPosition(currentRow + 1, currentCol + 2),
                     new ChessPosition(currentRow + 1, currentCol - 2),
                     new ChessPosition(currentRow - 1, currentCol + 2),
@@ -108,28 +110,36 @@ public class ChessPiece {
                     new ChessPosition(currentRow - 2, currentCol + 1),
                     new ChessPosition(currentRow - 2, currentCol - 1)
                 };
-                for (int i=0; i<8; i++) {
-                    dest = sight[i];
-                    if (!dest.inBounds()) {
-                        continue;
-                    }
-                    target = board.getPiece(dest);
-                    if (target == null || target.getTeamColor() != pieceColor) {
-                        validMoves.add(new ChessMove(myPosition, dest, null));
-                    }
-                }
+                validMoves = checkMoves(board, myPosition, sight);
+                break;
             case BISHOP:
                 int[] bishopVertical = {-1,-1,1,1};
                 int[] bishopHorizontal = {-1,1,-1,1};
                 validMoves = lineOfSight(board, myPosition, bishopVertical, bishopHorizontal);
+                break;
             case ROOK:
                 int[] rookVertical = {-1,1,0,0};
                 int[] rookHorizontal = {0,0,-1,1};
                 validMoves = lineOfSight(board, myPosition, rookVertical, rookHorizontal);
+                break;
             case QUEEN:
                 int[] queenVertical = {-1,-1,-1,0,1,1,1,0};
                 int[] queenHorizontal = {-1,0,1,1,1,0,-1,-1};
                 validMoves = lineOfSight(board, myPosition, queenVertical, queenHorizontal);
+                break;
+            case KING:
+                sight = new ChessPosition[]{
+                    new ChessPosition(currentRow + 1, currentCol + 1),
+                    new ChessPosition(currentRow + 1, currentCol),
+                    new ChessPosition(currentRow + 1, currentCol - 1),
+                    new ChessPosition(currentRow, currentCol - 1),
+                    new ChessPosition(currentRow - 1, currentCol - 1),
+                    new ChessPosition(currentRow - 1, currentCol),
+                    new ChessPosition(currentRow - 1, currentCol + 1),
+                    new ChessPosition(currentRow, currentCol + 1)
+                };
+                validMoves = checkMoves(board, myPosition, sight);
+                break;
         }
         return validMoves;
     }
@@ -160,6 +170,20 @@ public class ChessPiece {
                     validMoves.add(new ChessMove(myPosition, dest, null));
                 }
                 break;
+            }
+        }
+        return validMoves;
+    }
+
+    private HashSet<ChessMove> checkMoves(ChessBoard board, ChessPosition myPosition, ChessPosition[] sight) {
+        HashSet<ChessMove> validMoves = new HashSet<>();
+        for (ChessPosition dest : sight) {
+            if (!dest.inBounds()) {
+                continue;
+            }
+            ChessPiece target = board.getPiece(dest);
+            if (target == null || target.getTeamColor() != pieceColor) {
+                validMoves.add(new ChessMove(myPosition, dest, null));
             }
         }
         return validMoves;
