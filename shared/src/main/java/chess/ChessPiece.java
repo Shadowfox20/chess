@@ -54,6 +54,8 @@ public class ChessPiece {
         HashSet<ChessMove> validMoves = new HashSet<ChessMove>();
         var currentCol = myPosition.getColumn();
         var currentRow = myPosition.getRow();
+        ChessPosition dest;
+        ChessPiece target;
         switch(type) {
             case PAWN:
                 var targetRow = currentRow;
@@ -70,8 +72,8 @@ public class ChessPiece {
                     promotions.add(PieceType.ROOK);
                     promotions.add(PieceType.QUEEN);
                 }
-                ChessPosition dest = new ChessPosition(targetRow, currentCol);
-                ChessPiece target = board.getPiece(dest);
+                dest = new ChessPosition(targetRow, currentCol);
+                target = board.getPiece(dest);
                 if (target == null) {
                     for (PieceType promotion : promotions) {
                         validMoves.add(new ChessMove(myPosition, dest, promotion));
@@ -116,6 +118,49 @@ public class ChessPiece {
                         validMoves.add(new ChessMove(myPosition, dest, null));
                     }
                 }
+            case BISHOP:
+                int[] bishopVertical = {-1,-1,1,1};
+                int[] bishopHorizontal = {-1,1,-1,1};
+                validMoves = lineOfSight(board, myPosition, bishopVertical, bishopHorizontal);
+            case ROOK:
+                int[] rookVertical = {-1,1,0,0};
+                int[] rookHorizontal = {0,0,-1,1};
+                validMoves = lineOfSight(board, myPosition, rookVertical, rookHorizontal);
+            case QUEEN:
+                int[] queenVertical = {-1,-1,-1,0,1,1,1,0};
+                int[] queenHorizontal = {-1,0,1,1,1,0,-1,-1};
+                validMoves = lineOfSight(board, myPosition, queenVertical, queenHorizontal);
+        }
+        return validMoves;
+    }
+
+    private HashSet<ChessMove> lineOfSight(ChessBoard board, ChessPosition myPosition, int[] vertical, int[] horizontal) {
+        int len = Math.min(horizontal.length, vertical.length);
+        int currentCol = myPosition.getColumn();
+        int currentRow = myPosition.getRow();
+        HashSet<ChessMove> validMoves = new HashSet<>();
+        for (int i=0; i<len; i++) {
+            int v = vertical[i];
+            int h = horizontal[i];
+            int x = currentCol;
+            int y = currentRow;
+            while (true) {
+                x += h;
+                y += v;
+                ChessPosition dest = new ChessPosition(x, y);
+                if (!dest.inBounds()) {
+                    break;
+                }
+                ChessPiece target = board.getPiece(dest);
+                if (target == null) {
+                    validMoves.add(new ChessMove(myPosition, dest, null));
+                    continue;
+                }
+                if (target.getTeamColor() != pieceColor) {
+                    validMoves.add(new ChessMove(myPosition, dest, null));
+                }
+                break;
+            }
         }
         return validMoves;
     }
