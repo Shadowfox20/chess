@@ -201,4 +201,16 @@ public class ChessPiece {
     public int hashCode() {
         return (31 * pieceColor.hashCode()) + (79 * type.hashCode());
     }
+/*
+    public static void main(String[] args) {
+        ChessBoard board = new ChessBoard();
+        board.resetBoard();
+        ChessPosition position = new ChessPosition(2, 5);
+        ChessPiece pawn = board.getPiece(position);
+        System.out.println("Type: " + pawn.getPieceType() + " moves: " + pawn.pieceMoves(board, position).toString());
+        position = new ChessPosition(1, 3);
+        ChessPiece knight = board.getPiece(position);
+        System.out.println("Type: " + knight.getPieceType() + " moves: " + knight.pieceMoves(board, position).toString());
+    }
+ */
 }
