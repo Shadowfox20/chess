@@ -158,7 +158,7 @@ public class ChessPiece {
                 x += h;
                 y += v;
                 ChessPosition dest = new ChessPosition(x, y);
-                if (!dest.inBounds()) {
+                if (dest.outOfBounds()) {
                     break;
                 }
                 ChessPiece target = board.getPiece(dest);
@@ -178,7 +178,7 @@ public class ChessPiece {
     private HashSet<ChessMove> checkMoves(ChessBoard board, ChessPosition myPosition, ChessPosition[] sight) {
         HashSet<ChessMove> validMoves = new HashSet<>();
         for (ChessPosition dest : sight) {
-            if (!dest.inBounds()) {
+            if (dest.outOfBounds()) {
                 continue;
             }
             ChessPiece target = board.getPiece(dest);
@@ -201,8 +201,7 @@ public class ChessPiece {
     public int hashCode() {
         return (31 * pieceColor.hashCode()) + (79 * type.hashCode());
     }
-/*
-    public static void main(String[] args) {
+        public static void main(String[] args) {
         ChessBoard board = new ChessBoard();
         board.resetBoard();
         ChessPosition position = new ChessPosition(2, 5);
@@ -212,5 +211,4 @@ public class ChessPiece {
         ChessPiece knight = board.getPiece(position);
         System.out.println("Type: " + knight.getPieceType() + " moves: " + knight.pieceMoves(board, position).toString());
     }
- */
 }
