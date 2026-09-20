@@ -48,6 +48,15 @@ public class ChessMove {
     }
 
     @Override
+    public String toString() {
+        String promotion = "";
+        if (promotionPiece != null) {
+            promotion = " promote to " + promotionPiece;
+        }
+        return "{"+startPosition.toString()+" to "+endPosition.toString()+promotion+"}";
+    }
+
+    @Override
     public boolean equals(Object obj) {
         if (obj == null || obj.getClass() != ChessMove.class) {
             return false;

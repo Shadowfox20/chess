@@ -155,9 +155,9 @@ public class ChessPiece {
             int x = currentCol;
             int y = currentRow;
             while (true) {
-                x += h;
-                y += v;
-                ChessPosition dest = new ChessPosition(x, y);
+                x += v;
+                y += h;
+                ChessPosition dest = new ChessPosition(y, x);
                 if (dest.outOfBounds()) {
                     break;
                 }
@@ -201,14 +201,20 @@ public class ChessPiece {
     public int hashCode() {
         return (31 * pieceColor.hashCode()) + (79 * type.hashCode());
     }
-        public static void main(String[] args) {
+
+    public static void main(String[] args) {
         ChessBoard board = new ChessBoard();
         board.resetBoard();
         ChessPosition position = new ChessPosition(2, 5);
         ChessPiece pawn = board.getPiece(position);
         System.out.println("Type: " + pawn.getPieceType() + " moves: " + pawn.pieceMoves(board, position).toString());
-        position = new ChessPosition(1, 3);
+        position = new ChessPosition(1, 2);
         ChessPiece knight = board.getPiece(position);
         System.out.println("Type: " + knight.getPieceType() + " moves: " + knight.pieceMoves(board, position).toString());
+        ChessBoard blank = new ChessBoard();
+        ChessPosition center = new ChessPosition(4,4);
+        blank.addPiece(center, new ChessPiece(ChessGame.TeamColor.WHITE, PieceType.BISHOP));
+        ChessPiece bishop = blank.getPiece(center);
+        System.out.println("Type: " + bishop.getPieceType() + " moves: " + bishop.pieceMoves(blank, center).toString());
     }
 }

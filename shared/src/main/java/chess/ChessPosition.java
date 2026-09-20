@@ -37,6 +37,11 @@ public class ChessPosition {
     }
 
     @Override
+    public String toString() {
+        return "{row="+row+",col="+col+"}";
+    }
+
+    @Override
     public boolean equals(Object obj) {
         if (obj == null || obj.getClass() != ChessPosition.class) {
             return false;
