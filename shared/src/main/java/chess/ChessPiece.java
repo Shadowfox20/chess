@@ -79,6 +79,21 @@ public class ChessPiece {
                     for (PieceType promotion : promotions) {
                         validMoves.add(new ChessMove(myPosition, dest, promotion));
                     }
+                    // Two-move start
+                    if (currentRow == 7 && pieceColor == ChessGame.TeamColor.BLACK) {
+                        dest = new ChessPosition(targetRow - 1, currentCol);
+                        target = board.getPiece(dest);
+                        if (target == null) {
+                            validMoves.add(new ChessMove(myPosition, dest, null));
+                        }
+                    }
+                    if (currentRow == 2 && pieceColor == ChessGame.TeamColor.WHITE) {
+                        dest = new ChessPosition(targetRow + 1, currentCol);
+                        target = board.getPiece(dest);
+                        if (target == null) {
+                            validMoves.add(new ChessMove(myPosition, dest, null));
+                        }
+                    }
                 }
                 if (currentCol != 1) {
                     dest = new ChessPosition(targetRow, currentCol - 1);
@@ -88,6 +103,7 @@ public class ChessPiece {
                             validMoves.add(new ChessMove(myPosition, dest, promotion));
                         }
                     }
+                    // En passant?
                 }
                 if (currentCol != 8) {
                     dest = new ChessPosition(targetRow, currentCol + 1);
@@ -97,6 +113,7 @@ public class ChessPiece {
                             validMoves.add(new ChessMove(myPosition, dest, promotion));
                         }
                     }
+                    // En passant?
                 }
                 break;
             case KNIGHT:
