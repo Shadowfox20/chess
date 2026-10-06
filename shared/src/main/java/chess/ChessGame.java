@@ -62,14 +62,30 @@ public class ChessGame {
      */
     public void makeMove(ChessMove move) throws InvalidMoveException {
         ChessPiece piece = board.getPiece(move.getStartPosition());
+        if (piece == null) {
+            throw new InvalidMoveException("there is no piece at "+move.getStartPosition());
+        }
+        if (teamTurn != piece.getTeamColor()) {
+            throw new InvalidMoveException("piece "+piece+" is not the correct team color");
+        }
         if (!piece.pieceMoves(board, move.getStartPosition()).contains(move)) {
-            throw new InvalidMoveException("move "+move.toString()+" invalid");
+            throw new InvalidMoveException("move "+move+" invalid on board");
+        }
+        if (isInCheck(teamTurn)) {
+            if (piece.getPieceType() == ChessPiece.PieceType.KING) {
+            } else if () {
+            }
         }
         if (move.getPromotionPiece() != null) {
             piece = new ChessPiece(piece.getTeamColor(), move.getPromotionPiece());
         }
         board.addPiece(move.getEndPosition(), piece);
         board.addPiece(move.getStartPosition(), null);
+        if (teamTurn == TeamColor.WHITE) {
+            teamTurn = TeamColor.BLACK;
+        } else {
+            teamTurn = TeamColor.WHITE;
+        }
     }
 
     /**
@@ -119,6 +135,16 @@ public class ChessGame {
      */
     public ChessBoard getBoard() {
         return board;
+    }
+
+    /**
+     * Gets all possible moves for a team (before applying any game logic, i.e. not accounting for check)
+     *
+     * @param team the color of the team whose moves are being requested
+     * @return a collection of all possible moves
+     */
+    public Collection<ChessMove> teamMoves(TeamColor team) {
+
     }
 
     @Override
