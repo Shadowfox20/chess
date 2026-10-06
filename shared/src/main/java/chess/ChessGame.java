@@ -177,7 +177,6 @@ public class ChessGame {
             oppColor = TeamColor.BLACK;
         }
         Collection<ChessPosition> blocks = blockingMoves(teamColor);
-        ArrayList<ChessMove> validMoves = new ArrayList<>();
         for (int i = 1; i <= 8; i++) {
             for (int j = 1; j <= 8; j++) {
                 ChessPosition position = new ChessPosition(i, j);
@@ -192,24 +191,23 @@ public class ChessGame {
                         if (oppMoves.contains(move.getEndPosition())) {
                             continue;
                         }
-                        validMoves.add(move);
+                        if (!endangersKing(move)) {
+                            return false;
+                        }
                     }
                     continue;
                 }
-                validMoves.addAll(validMovesInCheck(position, blocks));
+                if (hasValidMovesInCheck(piece, position, blocks)) {
+                    return false;
+                }
             }
         }
-        return validMoves.isEmpty();
+        return true;
     }
 
-    public Collection<ChessMove> validMovesInCheck(ChessPosition startPosition, Collection<ChessPosition> blocks) {
-        ArrayList<ChessMove> validMoves = new ArrayList<>();
-        if (blocks == null || blocks.isEmpty()) {
-            return validMoves;
-        }
-        ChessPiece piece = board.getPiece(startPosition);
-        if (piece == null) {
-            return null;
+    public boolean hasValidMovesInCheck(ChessPiece piece, ChessPosition startPosition, Collection<ChessPosition> blocks) {
+        if (blocks == null || blocks.isEmpty() || piece == null) {
+            return false;
         }
         Collection<ChessMove> allMoves = piece.pieceMoves(board, startPosition);
         for (ChessMove move : allMoves) {
@@ -219,9 +217,9 @@ public class ChessGame {
             if (endangersKing(move)) {
                 continue;
             }
-            validMoves.add(move);
+            return true;
         }
-        return validMoves;
+        return false;
     }
 
     /**
@@ -239,7 +237,6 @@ public class ChessGame {
         if (teamTurn == TeamColor.WHITE) {
             oppColor = TeamColor.BLACK;
         }
-        ArrayList<ChessMove> validMoves = new ArrayList<>();
         for (int i = 1; i <= 8; i++) {
             for (int j = 1; j <= 8; j++) {
                 ChessPosition position = new ChessPosition(i, j);
@@ -254,30 +251,29 @@ public class ChessGame {
                         if (oppMoves.contains(move.getEndPosition())) {
                             continue;
                         }
-                        validMoves.add(move);
+                        if (!endangersKing(move)) {
+                            return false;
+                        }
                     }
                     continue;
                 }
-                validMoves.addAll(validMovesUnchecked(position));
+                if (hasValidMovesUnchecked(piece, position)) {
+                    return false;
+                }
             }
         }
-        return validMoves.isEmpty();
+        return true;
     }
 
-    public Collection<ChessMove> validMovesUnchecked(ChessPosition startPosition) {
-        ChessPiece piece = board.getPiece(startPosition);
-        if (piece == null) {
-            return null;
-        }
+    public boolean hasValidMovesUnchecked(ChessPiece piece, ChessPosition startPosition) {
         Collection<ChessMove> allMoves = piece.pieceMoves(board, startPosition);
-        ArrayList<ChessMove> validMoves = new ArrayList<>();
         for (ChessMove move : allMoves) {
             if (endangersKing(move)) {
                 continue;
             }
-            validMoves.add(move);
+            return true;
         }
-        return validMoves;
+        return false;
     }
 
     /**
@@ -354,7 +350,7 @@ public Collection<ChessMove> teamMoves(TeamColor team) {
 
     /**
      * Returns the moves that will block a king from an attacker (including captures).
-     * Assumes the team is in check.
+     * Assumes the team is in check (will return null if no check found).
      *
      * @param team
      * @return
@@ -366,7 +362,7 @@ public Collection<ChessMove> teamMoves(TeamColor team) {
         }
         ChessPosition kingPosition = null;
         Collection<ChessPosition> blockingMoves = new HashSet<>();
-        boolean hasAttacker = false;
+        ChessPosition attacker = null;
         for (int i = 1; i <= 8; i++) {
             for (int j = 1; j <= 8; j++) {
                 ChessPosition position = new ChessPosition(i, j);
@@ -377,7 +373,7 @@ public Collection<ChessMove> teamMoves(TeamColor team) {
             }
         }
         if (kingPosition == null) {
-            return blockingMoves;
+            return null;
         }
         for (int i = 1; i <= 8; i++) {
             for (int j = 1; j <= 8; j++) {
@@ -387,61 +383,66 @@ public Collection<ChessMove> teamMoves(TeamColor team) {
                     Collection<ChessMove> moves = piece.pieceMoves(board, position);
                     for (ChessMove move : moves) {
                         if (move.getEndPosition().equals(kingPosition)) {
-                            if (hasAttacker) {
-                                return null;
+                            if (attacker != null) {
+                                return blockingMoves;
                             }
-                            hasAttacker = true;
-                            blockingMoves.add(position);
-                            ChessPiece.PieceType attackerType = piece.getPieceType();
-                            if (attackerType == ChessPiece.PieceType.PAWN || attackerType == ChessPiece.PieceType.KNIGHT) {
-                                continue;
-                            }
-                            int col = position.getColumn();
-                            int row = position.getRow();
-                            if (col == kingPosition.getColumn()) {
-                                if (row > kingPosition.getRow()) {
-                                    for (int x = kingPosition.getRow() + 1; x < row; x++) {
-                                        blockingMoves.add(new ChessPosition(x, col));
-                                    }
-                                } else if (row < kingPosition.getRow()) {
-                                    for (int x = kingPosition.getRow() - 1; x > row; x--) {
-                                        blockingMoves.add(new ChessPosition(x, col));
-                                    }
-                                }
-                            }
-                            if (row == kingPosition.getRow()) {
-                                if (col > kingPosition.getColumn()) {
-                                    for (int x = kingPosition.getColumn() + 1; x < col; x++) {
-                                        blockingMoves.add(new ChessPosition(row, x));
-                                    }
-                                } else if (col < kingPosition.getColumn()) {
-                                    for (int x = kingPosition.getColumn() - 1; x > col; x--) {
-                                        blockingMoves.add(new ChessPosition(row, x));
-                                    }
-                                }
-                            }
-                            if (col > kingPosition.getColumn()) {
-                                if (row > kingPosition.getRow()) {
-                                    for (int x = 1; x < col - kingPosition.getColumn(); x++) {
-                                        blockingMoves.add(new ChessPosition(row + x, col + x));
-                                    }
-                                } else {
-                                    for (int x = 1; x < col - kingPosition.getColumn(); x++) {
-                                        blockingMoves.add(new ChessPosition(row - x, col + x));
-                                    }
-                                }
-                            } if (row > kingPosition.getRow()) {
-                                for (int x = 1; x < kingPosition.getColumn() - col; x++) {
-                                    blockingMoves.add(new ChessPosition(row + x, col - x));
-                                }
-                            } else {
-                                for (int x = 1; x < kingPosition.getColumn() - col; x++) {
-                                    blockingMoves.add(new ChessPosition(row - x, col - x));
-                                }
-                            }
+                            attacker = position;
+                            break;
                         }
                     }
                 }
+            }
+        }
+        if (attacker == null) {
+            return null;
+        }
+        blockingMoves.add(attacker);
+        ChessPiece piece = board.getPiece(attacker);
+        ChessPiece.PieceType attackerType = piece.getPieceType();
+        if (attackerType == ChessPiece.PieceType.PAWN || attackerType == ChessPiece.PieceType.KNIGHT) {
+            return blockingMoves;
+        }
+        int col = attacker.getColumn();
+        int row = attacker.getRow();
+        if (col == kingPosition.getColumn()) {
+            if (row > kingPosition.getRow()) {
+                for (int x = kingPosition.getRow() + 1; x < row; x++) {
+                    blockingMoves.add(new ChessPosition(x, col));
+                }
+            } else if (row < kingPosition.getRow()) {
+                for (int x = kingPosition.getRow() - 1; x > row; x--) {
+                    blockingMoves.add(new ChessPosition(x, col));
+                }
+            }
+        }
+        if (row == kingPosition.getRow()) {
+            if (col > kingPosition.getColumn()) {
+                for (int x = kingPosition.getColumn() + 1; x < col; x++) {
+                    blockingMoves.add(new ChessPosition(row, x));
+                }
+            } else if (col < kingPosition.getColumn()) {
+                for (int x = kingPosition.getColumn() - 1; x > col; x--) {
+                    blockingMoves.add(new ChessPosition(row, x));
+                }
+            }
+        }
+        if (col > kingPosition.getColumn()) {
+            if (row > kingPosition.getRow()) {
+                for (int x = 1; x < col - kingPosition.getColumn(); x++) {
+                    blockingMoves.add(new ChessPosition(row + x, col + x));
+                }
+            } else {
+                for (int x = 1; x < col - kingPosition.getColumn(); x++) {
+                    blockingMoves.add(new ChessPosition(row - x, col + x));
+                }
+            }
+        } if (row > kingPosition.getRow()) {
+            for (int x = 1; x < kingPosition.getColumn() - col; x++) {
+                blockingMoves.add(new ChessPosition(row + x, col - x));
+            }
+        } else {
+            for (int x = 1; x < kingPosition.getColumn() - col; x++) {
+                blockingMoves.add(new ChessPosition(row - x, col - x));
             }
         }
         return blockingMoves;
