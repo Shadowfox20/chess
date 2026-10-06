@@ -64,7 +64,7 @@ public class ChessBoard {
         int hash = 0;
         for (int i = 0; i < 8; i++) {
             for (int j = 0; j < 8; j++) {
-                hash = hash * 31 + ((board[i][j] != null) ? board[i][j].hashCode() : -1);
+                hash = hash * 17 + ((board[i][j] != null) ? board[i][j].hashCode() : 0);
             }
         }
         return hash;

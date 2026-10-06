@@ -61,7 +61,15 @@ public class ChessGame {
      * @throws InvalidMoveException if move is invalid
      */
     public void makeMove(ChessMove move) throws InvalidMoveException {
-        throw new RuntimeException("Not implemented");
+        ChessPiece piece = board.getPiece(move.getStartPosition());
+        if (!piece.pieceMoves(board, move.getStartPosition()).contains(move)) {
+            throw new InvalidMoveException("move "+move.toString()+" invalid");
+        }
+        if (move.getPromotionPiece() != null) {
+            piece = new ChessPiece(piece.getTeamColor(), move.getPromotionPiece());
+        }
+        board.addPiece(move.getEndPosition(), piece);
+        board.addPiece(move.getStartPosition(), null);
     }
 
     /**
@@ -101,7 +109,7 @@ public class ChessGame {
      * @param board the new board to use
      */
     public void setBoard(ChessBoard board) {
-        throw new RuntimeException("Not implemented");
+        this.board = board;
     }
 
     /**
@@ -115,7 +123,7 @@ public class ChessGame {
 
     @Override
     public int hashCode() {
-        return board.hashCode() * 31 + teamTurn.hashCode();
+        return board.hashCode() * 31 + teamTurn.hashCode() * 13;
     }
 
     @Override
@@ -124,6 +132,6 @@ public class ChessGame {
             return false;
         }
         ChessGame other = (ChessGame) obj;
-        return teamTurn == other.getTeamTurn() && board == other.getBoard();
+        return teamTurn.equals(other.getTeamTurn()) && board.equals(other.getBoard());
     }
 }

@@ -216,7 +216,7 @@ public class ChessPiece {
 
     @Override
     public int hashCode() {
-        return (31 * pieceColor.hashCode()) + (79 * type.hashCode());
+        return (7 * pieceColor.hashCode()) + (31 * type.hashCode());
     }
 
     public static void main(String[] args) {
