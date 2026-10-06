@@ -176,16 +176,42 @@ public class ChessGame {
         if (teamTurn == TeamColor.WHITE) {
             oppColor = TeamColor.BLACK;
         }
-        throw new RuntimeException("Not implemented");
+        Collection<ChessPosition> blocks = blockingMoves(teamColor);
+        ArrayList<ChessMove> validMoves = new ArrayList<>();
+        for (int i = 1; i <= 8; i++) {
+            for (int j = 1; j <= 8; j++) {
+                ChessPosition position = new ChessPosition(i, j);
+                ChessPiece piece = board.getPiece(position);
+                if (piece == null || piece.getTeamColor() != teamColor) {
+                    continue;
+                }
+                if (piece.getPieceType() == ChessPiece.PieceType.KING) {
+                    Collection<ChessPosition> oppMoves = teamSight(oppColor);
+                    Collection<ChessMove> kingMoves = piece.pieceMoves(board, position);
+                    for (ChessMove move : kingMoves) {
+                        if (oppMoves.contains(move.getEndPosition())) {
+                            continue;
+                        }
+                        validMoves.add(move);
+                    }
+                    continue;
+                }
+                validMoves.addAll(validMovesInCheck(position, blocks));
+            }
+        }
+        return validMoves.isEmpty();
     }
 
     public Collection<ChessMove> validMovesInCheck(ChessPosition startPosition, Collection<ChessPosition> blocks) {
+        ArrayList<ChessMove> validMoves = new ArrayList<>();
+        if (blocks == null || blocks.isEmpty()) {
+            return validMoves;
+        }
         ChessPiece piece = board.getPiece(startPosition);
         if (piece == null) {
             return null;
         }
         Collection<ChessMove> allMoves = piece.pieceMoves(board, startPosition);
-        ArrayList<ChessMove> validMoves = new ArrayList<>();
         for (ChessMove move : allMoves) {
             if (!blocks.contains(move.getEndPosition())) {
                 continue;
@@ -213,7 +239,29 @@ public class ChessGame {
         if (teamTurn == TeamColor.WHITE) {
             oppColor = TeamColor.BLACK;
         }
-        throw new RuntimeException("Not implemented");
+        ArrayList<ChessMove> validMoves = new ArrayList<>();
+        for (int i = 1; i <= 8; i++) {
+            for (int j = 1; j <= 8; j++) {
+                ChessPosition position = new ChessPosition(i, j);
+                ChessPiece piece = board.getPiece(position);
+                if (piece == null || piece.getTeamColor() != teamColor) {
+                    continue;
+                }
+                if (piece.getPieceType() == ChessPiece.PieceType.KING) {
+                    Collection<ChessPosition> oppMoves = teamSight(oppColor);
+                    Collection<ChessMove> kingMoves = piece.pieceMoves(board, position);
+                    for (ChessMove move : kingMoves) {
+                        if (oppMoves.contains(move.getEndPosition())) {
+                            continue;
+                        }
+                        validMoves.add(move);
+                    }
+                    continue;
+                }
+                validMoves.addAll(validMovesUnchecked(position));
+            }
+        }
+        return validMoves.isEmpty();
     }
 
     public Collection<ChessMove> validMovesUnchecked(ChessPosition startPosition) {
@@ -265,9 +313,14 @@ public class ChessGame {
                 if (piece != null && piece.getTeamColor() == team) {
                     Collection<ChessMove> moves = piece.pieceMoves(board, position);
                     if (piece.getPieceType() == ChessPiece.PieceType.PAWN) {
-                        for (ChessMove move : moves) {
-                            teamMoves.add(move.getEndPosition());
+                        if (team == TeamColor.WHITE) {
+                            teamMoves.add(new ChessPosition(i+1, j+1));
+                            teamMoves.add(new ChessPosition(i+1, j-1));
+                        } else {
+                            teamMoves.add(new ChessPosition(i-1, j+1));
+                            teamMoves.add(new ChessPosition(i-1, j-1));
                         }
+                        continue;
                     }
                     for (ChessMove move : moves) {
                         teamMoves.add(move.getEndPosition());
