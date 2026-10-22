@@ -30,4 +30,14 @@ public class FailedDataAccess implements DataAccess{
     public GameData addGame(String name) throws DataAccessException {
         throw new DataAccessException("test-addGame");
     }
+
+    @Override
+    public GameData getGame(int gameID) throws DataAccessException {
+        throw new DataAccessException("test-getGame");
+    }
+
+    @Override
+    public void joinGame(int gameID, boolean whiteTeam, String username) throws DataAccessException {
+        throw new DataAccessException("test-joinGame");
+    }
 }

@@ -11,7 +11,7 @@ public class MemoryDataAccess implements DataAccess {
     private record user(String username, String password, String email) {}
 
     private final HashMap<String, user> userTable = new HashMap<>();
-    private final List<GameData> activeGameList = new ArrayList<>();
+    private final List<GameData> activeGameList = new ArrayList<>(0);
 
     @Override
     public UserData createUser(String username, String password, String email) {
@@ -56,4 +56,11 @@ public class MemoryDataAccess implements DataAccess {
         }
         return activeGameList.get(gameID - 1);
     }
-}
+
+    @Override
+    public void joinGame(int gameID, boolean whiteTeam, String username) throws DataAccessException {
+        GameData gameData = getGame(gameID);
+        String whiteUser = whiteTeam ? username : gameData.whiteUsername();
+        String blackUser = whiteTeam ? gameData.blackUsername() : username;
+        activeGameList.set(gameID - 1, new GameData(gameID, whiteUser, blackUser, gameData.gameName()));
+    }}

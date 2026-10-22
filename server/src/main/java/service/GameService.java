@@ -7,9 +7,9 @@ import model.GameData;
 import java.util.List;
 
 public class GameService {
-    public record GameListResponse(List<GameData> list) {}
+    public record GameListResponse(List<GameData> games) {}
 
-    public static GameListResponse GameList(DataAccess dataAccess) throws DataAccessException {
+    public static GameListResponse gameList(DataAccess dataAccess) throws DataAccessException {
         return new GameListResponse(dataAccess.activeGames());
     }
 

@@ -36,6 +36,7 @@ public class Server {
 
     private void clearDB(Context context) {
         dataAccess = new MemoryDataAccess();
+        validTokens.clear();
     }
 
     private void registerHandler(Context context) {
@@ -92,7 +93,7 @@ public class Server {
             return;
         }
         try {
-            GameService.GameListResponse games = GameService.GameList(dataAccess);
+            GameService.GameListResponse games = GameService.gameList(dataAccess);
 
             context.status(200);
             context.result(serializer.toJson(games));
@@ -128,7 +129,7 @@ public class Server {
         GameService.JoinGameRequest request = serializer.fromJson(context.body(), GameService.JoinGameRequest.class);
         try {
             GameService.JoinGameRequest userReq = new GameService.JoinGameRequest(request.gameID(), request.playerColor(), userFromAuth(context));
-            GameService.joinGame(dataAccess, request);
+            GameService.joinGame(dataAccess, userReq);
             context.status(200);
         } catch (DataAccessException e) {
             context.status(500);

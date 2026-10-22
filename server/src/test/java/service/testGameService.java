@@ -25,7 +25,7 @@ public class testGameService {
         });
         Assertions.assertDoesNotThrow(() ->
                 Assertions.assertEquals(expected,
-                        GameService.GameList(dataAccess).list()));
+                        GameService.gameList(dataAccess).games()));
     }
 
     @Test
@@ -34,6 +34,6 @@ public class testGameService {
     public void gameListExceptions() {
         FailedDataAccess dataAccess = new FailedDataAccess();
         Assertions.assertThrowsExactly(DataAccessException.class, () ->
-                GameService.GameList(dataAccess));
+                GameService.gameList(dataAccess));
     }
 }
