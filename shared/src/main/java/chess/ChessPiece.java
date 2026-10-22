@@ -59,36 +59,25 @@ public class ChessPiece {
         ChessPosition[] sight;
         switch(type) {
             case PAWN:
-                var targetRow = currentRow;
-                if (pieceColor == ChessGame.TeamColor.WHITE) {
-                    targetRow += 1;
-                } else {
-                    targetRow -= 1;
-                }
-                ArrayList<ChessPiece.PieceType> promotions = new ArrayList<>(1);
-                promotions.add(null);
-                if (targetRow == 1 || targetRow == 8) {
-                    promotions.set(0, PieceType.KNIGHT);
-                    promotions.add(PieceType.BISHOP);
-                    promotions.add(PieceType.ROOK);
-                    promotions.add(PieceType.QUEEN);
-                }
+                int direction = pieceColor == ChessGame.TeamColor.WHITE ? 1 : -1;
+                var targetRow = currentRow + direction;
+                boolean canPromote = targetRow == 1 || targetRow == 8;
+                List<ChessPiece.PieceType> promotions = List.of(PieceType.KNIGHT, PieceType.BISHOP, PieceType.ROOK, PieceType.QUEEN);
                 dest = new ChessPosition(targetRow, currentCol);
+
                 target = board.getPiece(dest);
                 if (target == null) {
-                    for (PieceType promotion : promotions) {
-                        validMoves.add(new ChessMove(myPosition, dest, promotion));
+                    if (canPromote) {
+                        for (PieceType promotion : promotions) {
+                            validMoves.add(new ChessMove(myPosition, dest, promotion));
+                        }
+                    } else {
+                        validMoves.add(new ChessMove(myPosition, dest, null));
                     }
                     // Two-move start
-                    if (currentRow == 7 && pieceColor == ChessGame.TeamColor.BLACK) {
-                        dest = new ChessPosition(targetRow - 1, currentCol);
-                        target = board.getPiece(dest);
-                        if (target == null) {
-                            validMoves.add(new ChessMove(myPosition, dest, null));
-                        }
-                    }
-                    if (currentRow == 2 && pieceColor == ChessGame.TeamColor.WHITE) {
-                        dest = new ChessPosition(targetRow + 1, currentCol);
+                    if (currentRow == 7 && pieceColor == ChessGame.TeamColor.BLACK ||
+                            currentRow == 2 && pieceColor == ChessGame.TeamColor.WHITE) {
+                        dest = new ChessPosition(targetRow + direction, currentCol);
                         target = board.getPiece(dest);
                         if (target == null) {
                             validMoves.add(new ChessMove(myPosition, dest, null));
@@ -99,8 +88,12 @@ public class ChessPiece {
                     dest = new ChessPosition(targetRow, currentCol - 1);
                     target = board.getPiece(dest);
                     if (target != null && target.getTeamColor() != pieceColor) {
-                        for (PieceType promotion : promotions) {
-                            validMoves.add(new ChessMove(myPosition, dest, promotion));
+                        if (canPromote) {
+                            for (PieceType promotion : promotions) {
+                                validMoves.add(new ChessMove(myPosition, dest, promotion));
+                            }
+                        } else {
+                            validMoves.add(new ChessMove(myPosition, dest, null));
                         }
                     }
                     // En passant?
@@ -109,8 +102,12 @@ public class ChessPiece {
                     dest = new ChessPosition(targetRow, currentCol + 1);
                     target = board.getPiece(dest);
                     if (target != null && target.getTeamColor() != pieceColor) {
-                        for (PieceType promotion : promotions) {
-                            validMoves.add(new ChessMove(myPosition, dest, promotion));
+                        if (canPromote) {
+                            for (PieceType promotion : promotions) {
+                                validMoves.add(new ChessMove(myPosition, dest, promotion));
+                            }
+                        } else {
+                            validMoves.add(new ChessMove(myPosition, dest, null));
                         }
                     }
                     // En passant?
