@@ -11,7 +11,8 @@ public class UserService {
 
     public record RegisterResponse(String username) {}
 
-    public static RegisterResponse register(DataAccess data, RegisterRequest request) throws AlreadyExistsException, DataAccessException, BadRequestException {
+    public static RegisterResponse register(DataAccess data, RegisterRequest request)
+            throws AlreadyExistsException, DataAccessException, BadRequestException {
         if (request.username() == null || request.password() == null || request.email() == null ||
                 request.username().isEmpty() || request.password().isEmpty() || request.email().isEmpty()) {
             throw new BadRequestException("all fields are required");
@@ -26,8 +27,10 @@ public class UserService {
 
     public record LoginResponse(String username) {}
 
-    public static LoginResponse login(DataAccess data, LoginRequest request) throws IncorrectLoginException, DataAccessException, BadRequestException {
-        if (request.username() == null || request.username().isEmpty() || request.password() == null || request.password().isEmpty()) {
+    public static LoginResponse login(DataAccess data, LoginRequest request)
+            throws IncorrectLoginException, DataAccessException, BadRequestException {
+        if (request.username() == null || request.username().isEmpty() ||
+                request.password() == null || request.password().isEmpty()) {
             throw new BadRequestException("username and password required");
         }
         UserLogin userLogin = data.getUserLogin(request.username());

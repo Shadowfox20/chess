@@ -8,20 +8,20 @@ import java.util.HashMap;
 import java.util.List;
 
 public class MemoryDataAccess implements DataAccess {
-    private record user(String username, String password, String email) {}
+    private record User(String username, String password, String email) {}
 
-    private final HashMap<String, user> userTable = new HashMap<>();
+    private final HashMap<String, User> userTable = new HashMap<>();
     private final List<GameData> activeGameList = new ArrayList<>(0);
 
     @Override
     public UserData createUser(String username, String password, String email) {
-        userTable.put(username, new user(username, password, email));
+        userTable.put(username, new User(username, password, email));
         return getUser(username);
     }
 
     @Override
     public UserData getUser(String username) {
-        user res = userTable.get(username);
+        User res = userTable.get(username);
         if (res == null) {
             return null;
         }
@@ -30,7 +30,7 @@ public class MemoryDataAccess implements DataAccess {
 
     @Override
     public UserLogin getUserLogin(String username) {
-        user res = userTable.get(username);
+        User res = userTable.get(username);
         if (res == null) {
             return null;
         }
@@ -58,7 +58,7 @@ public class MemoryDataAccess implements DataAccess {
     }
 
     @Override
-    public void joinGame(int gameID, boolean whiteTeam, String username) throws DataAccessException {
+    public void joinGame(int gameID, boolean whiteTeam, String username) {
         GameData gameData = getGame(gameID);
         String whiteUser = whiteTeam ? username : gameData.whiteUsername();
         String blackUser = whiteTeam ? gameData.blackUsername() : username;

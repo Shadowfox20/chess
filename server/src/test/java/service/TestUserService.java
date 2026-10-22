@@ -8,7 +8,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 
-public class testUserService {
+public class TestUserService {
     @Test
     @Order(3)
     @DisplayName("Register Success")

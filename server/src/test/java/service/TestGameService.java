@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-public class testGameService {
+public class TestGameService {
     @Test
     @Order(1)
     @DisplayName("Game List Success")
