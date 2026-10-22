@@ -27,7 +27,8 @@ public class GameService {
 
     public record JoinGameRequest(int gameID, String playerColor, String username) {}
 
-    public static void joinGame(DataAccess dataAccess, JoinGameRequest request) throws DataAccessException, BadRequestException, AlreadyExistsException{
+    public static void joinGame(DataAccess dataAccess, JoinGameRequest request)
+            throws DataAccessException, BadRequestException, AlreadyExistsException{
         if (request.gameID() == 0 || request.username() == null || request.username().isEmpty() || request.playerColor() == null ||
                 (!request.playerColor().equals("WHITE") && !request.playerColor().equals("BLACK"))) {
             throw new BadRequestException("select a game id and a team color (BLACK or WHITE) to join a game");
