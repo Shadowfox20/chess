@@ -16,6 +16,7 @@ public class Server {
     private final Javalin javalin;
     final private HashMap<String, String> validTokens = new HashMap<>();
     private final DataAccess dataAccess;
+    private final Gson serializer = new Gson();
 
     public Server(DataAccess dataAccess) {
         javalin = Javalin.create(config -> config.staticFiles.add("web"));
@@ -30,9 +31,9 @@ public class Server {
     }
 
     private void registerHandler(Context context) {
-        RegisterResponse.RegisterRequest request = context.bodyAsClass(RegisterResponse.RegisterRequest.class);
+        UserService.RegisterRequest request = serializer.fromJson(context.body(), UserService.RegisterRequest.class);
         try {
-            RegisterResponse response = new RegisterResponse(dataAccess, request);
+            UserService.RegisterResponse response = UserService.Register(dataAccess, request);
             String auth = UUID.randomUUID().toString();
             validTokens.put(auth, request.username());
             context.status(200);
@@ -47,9 +48,9 @@ public class Server {
     }
 
     private void loginHandler(Context context) {
-        LoginResponse.LoginRequest request = context.bodyAsClass(LoginResponse.LoginRequest.class);
+        UserService.LoginRequest request = serializer.fromJson(context.body(), UserService.LoginRequest.class);
         try {
-            LoginResponse response = new LoginResponse(dataAccess, request);
+            UserService.LoginResponse response = UserService.Login(dataAccess, request);
             String auth = UUID.randomUUID().toString();
             validTokens.put(auth, request.username());
             context.status(200);
@@ -77,7 +78,7 @@ public class Server {
             return;
         }
         try {
-            GameListResponse games = new GameListResponse(dataAccess);
+            GameService.GameListResponse games = GameService.GameList(dataAccess);
 
             context.status(200);
             context.result(new Gson().toJson(Map.of("list", games.list())));

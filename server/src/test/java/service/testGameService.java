@@ -2,7 +2,7 @@ package service;
 
 import dataaccess.DataAccessException;
 import dataaccess.FailedDataAccess;
-import dataaccess.GameData;
+import model.GameData;
 import dataaccess.MemoryDataAccess;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-public class testGameList {
+public class testGameService {
     @Test
     @Order(1)
     @DisplayName("Game List Success")
@@ -25,7 +25,7 @@ public class testGameList {
         });
         Assertions.assertDoesNotThrow(() ->
                 Assertions.assertEquals(expected,
-                        new GameListResponse(dataAccess).list()));
+                        GameService.GameList(dataAccess).list()));
     }
 
     @Test
@@ -34,6 +34,6 @@ public class testGameList {
     public void gameListExceptions() {
         FailedDataAccess dataAccess = new FailedDataAccess();
         Assertions.assertThrowsExactly(DataAccessException.class, () ->
-                new GameListResponse(dataAccess));
+                GameService.GameList(dataAccess));
     }
 }

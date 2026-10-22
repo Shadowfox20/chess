@@ -1,5 +1,8 @@
 package dataaccess;
 
+import model.GameData;
+import model.UserData;
+
 import java.util.List;
 
 public class FailedDataAccess implements DataAccess{

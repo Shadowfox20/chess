@@ -1,6 +1,7 @@
 package dataaccess;
 
-import jdk.dynalink.beans.StaticClass;
+import model.GameData;
+import model.UserData;
 
 import java.util.List;
 
