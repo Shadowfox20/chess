@@ -185,7 +185,7 @@ public class ChessGame {
             return false;
         }
         TeamColor oppColor = TeamColor.WHITE;
-        if (teamTurn == TeamColor.WHITE) {
+        if (teamColor == TeamColor.WHITE) {
             oppColor = TeamColor.BLACK;
         }
         for (int i = 1; i <= 8; i++) {
@@ -208,7 +208,7 @@ public class ChessGame {
             Collection<ChessMove> kingMoves = piece.pieceMoves(board, position);
             for (ChessMove move : kingMoves) {
                 if (oppMoves.contains(move.getEndPosition())) {
-                    return true;
+                    continue;
                 }
                 if (!endangersKing(move)) {
                     return true;
@@ -252,7 +252,7 @@ public class ChessGame {
             return false;
         }
         TeamColor oppColor = TeamColor.WHITE;
-        if (teamTurn == TeamColor.WHITE) {
+        if (teamColor == TeamColor.WHITE) {
             oppColor = TeamColor.BLACK;
         }
         for (int i = 1; i <= 8; i++) {
