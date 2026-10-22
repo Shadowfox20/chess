@@ -3,6 +3,7 @@ package server;
 import com.google.gson.Gson;
 import dataaccess.DataAccessException;
 import dataaccess.DataAccess;
+import dataaccess.MemoryDataAccess;
 import io.javalin.*;
 import io.javalin.http.Context;
 import service.*;
@@ -15,12 +16,13 @@ public class Server {
 
     private final Javalin javalin;
     final private HashMap<String, String> validTokens = new HashMap<>();
-    private final DataAccess dataAccess;
+    private DataAccess dataAccess;
     private final Gson serializer = new Gson();
 
     public Server(DataAccess dataAccess) {
         javalin = Javalin.create(config -> config.staticFiles.add("web"));
 
+        javalin.delete("/db", this::clearDB);
         javalin.post("/user", this::registerHandler);
         javalin.post("/session", this::loginHandler);
         javalin.delete("/session", this::logoutHandler);
@@ -30,6 +32,10 @@ public class Server {
         this.dataAccess = dataAccess;
     }
 
+    private void clearDB(Context context) {
+        dataAccess = new MemoryDataAccess();
+    }
+
     private void registerHandler(Context context) {
         UserService.RegisterRequest request = serializer.fromJson(context.body(), UserService.RegisterRequest.class);
         try {
@@ -37,13 +43,16 @@ public class Server {
             String auth = UUID.randomUUID().toString();
             validTokens.put(auth, request.username());
             context.status(200);
-            context.result(new Gson().toJson(Map.of("authData", auth,"username", response.username())));
+            context.result(serializer.toJson(Map.of("authToken", auth,"username", response.username())));
         } catch (DataAccessException e) {
             context.status(500);
-            context.result(new Gson().toJson(Map.of("message", "Error: " + e.getMessage())));
+            context.result(serializer.toJson(Map.of("message", "Error: " + e.getMessage())));
         } catch (AlreadyExistsException e) {
             context.status(403);
-            context.result(new Gson().toJson(Map.of("message", "Error: already taken")));
+            context.result(serializer.toJson(Map.of("message", "Error: already taken")));
+        } catch (BadRequestException e) {
+            context.status(400);
+            context.result(serializer.toJson(Map.of("message", "Error: bad request")));
         }
     }
 
@@ -54,13 +63,16 @@ public class Server {
             String auth = UUID.randomUUID().toString();
             validTokens.put(auth, request.username());
             context.status(200);
-            context.result(new Gson().toJson(Map.of("authData", auth,"username", response.username())));
+            context.result(serializer.toJson(Map.of("authToken", auth,"username", response.username())));
         } catch (DataAccessException e) {
             context.status(500);
-            context.result(new Gson().toJson(Map.of("message", "Error: " + e.getMessage())));
+            context.result(serializer.toJson(Map.of("message", "Error: " + e.getMessage())));
         } catch (IncorrectLoginException e) {
             context.status(401);
-            context.result(new Gson().toJson(Map.of("message", "Error: unauthorized")));
+            context.result(serializer.toJson(Map.of("message", "Error: unauthorized")));
+        } catch (BadRequestException e) {
+            context.status(400);
+            context.result(serializer.toJson(Map.of("message", "Error: bad request")));
         }
     }
 
@@ -81,10 +93,10 @@ public class Server {
             GameService.GameListResponse games = GameService.GameList(dataAccess);
 
             context.status(200);
-            context.result(new Gson().toJson(Map.of("list", games.list())));
+            context.result(serializer.toJson(Map.of("list", games.list())));
         } catch (DataAccessException e) {
             context.status(500);
-            context.result(new Gson().toJson(Map.of("message", "Error: " + e.getMessage())));
+            context.result(serializer.toJson(Map.of("message", "Error: " + e.getMessage())));
         }
     }
 
@@ -93,7 +105,7 @@ public class Server {
         if (!validTokens.containsKey(authToken)) {
             ctx.contentType("application/json");
             ctx.status(401);
-            ctx.result(new Gson().toJson(Map.of("message", "Error: unauthorized")));
+            ctx.result(serializer.toJson(Map.of("message", "Error: unauthorized")));
             return false;
         }
         return true;
@@ -104,7 +116,7 @@ public class Server {
         if (!validTokens.get(authToken).equals(username)) {
             ctx.contentType("application/json");
             ctx.status(401);
-            ctx.result(new Gson().toJson(Map.of("message", "Error: unauthorized")));
+            ctx.result(serializer.toJson(Map.of("message", "Error: unauthorized")));
             return false;
         }
         return true;

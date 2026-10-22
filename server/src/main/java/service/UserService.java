@@ -11,7 +11,11 @@ public class UserService {
 
     public record RegisterResponse(String username) {}
 
-    public static RegisterResponse Register(DataAccess data, RegisterRequest request) throws AlreadyExistsException, DataAccessException {
+    public static RegisterResponse Register(DataAccess data, RegisterRequest request) throws AlreadyExistsException, DataAccessException, BadRequestException {
+        if (request.username() == null || request.password() == null || request.email() == null ||
+                request.username().isEmpty() || request.password().isEmpty() || request.email().isEmpty()) {
+            throw new BadRequestException("all fields are required");
+        }
         if (data.getUser(request.username()) != null) {
             throw new AlreadyExistsException("username already exists");
         }
@@ -22,7 +26,10 @@ public class UserService {
 
     public record LoginResponse(String username) {}
 
-    public static LoginResponse Login(DataAccess data, LoginRequest request) throws IncorrectLoginException, DataAccessException {
+    public static LoginResponse Login(DataAccess data, LoginRequest request) throws IncorrectLoginException, DataAccessException, BadRequestException {
+        if (request.username() == null || request.username().isEmpty() || request.password() == null || request.password().isEmpty()) {
+            throw new BadRequestException("username and password required");
+        }
         UserLogin userLogin = data.getUserLogin(request.username());
         if (userLogin == null) {
             throw new IncorrectLoginException("username not found");
