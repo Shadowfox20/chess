@@ -1,5 +1,7 @@
 package service;
 
+import dataaccess.DataAccessException;
+import dataaccess.FailedDataAccess;
 import dataaccess.MemoryDataAccess;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -32,5 +34,9 @@ public class testLogin {
                 new LoginResponse(dataAccess,
                         new LoginResponse.LoginRequest(
                                 "test", "not-password")));
+
+        FailedDataAccess failedDataAccess = new FailedDataAccess();
+        Assertions.assertThrowsExactly(DataAccessException.class, () ->
+                new GameListResponse(failedDataAccess));
     }
 }

@@ -35,7 +35,14 @@ public class MemoryDataAccess implements DataAccess {
     }
 
     @Override
-    public List<GameData> activeGames() throws DataAccessException {
+    public List<GameData> activeGames() {
         return activeGameList;
+    }
+
+    @Override
+    public GameData addGame(String name) {
+        GameData newGame = new GameData(activeGameList.size() + 1, null, null, name);
+        activeGameList.add(newGame);
+        return newGame;
     }
 }

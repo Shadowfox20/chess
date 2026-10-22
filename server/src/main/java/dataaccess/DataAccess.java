@@ -1,5 +1,7 @@
 package dataaccess;
 
+import jdk.dynalink.beans.StaticClass;
+
 import java.util.List;
 
 public interface DataAccess {
@@ -7,4 +9,5 @@ public interface DataAccess {
     UserData getUser(String username) throws DataAccessException;
     UserLogin getUserLogin(String username) throws DataAccessException;
     List<GameData> activeGames() throws DataAccessException;
+    GameData addGame(String name) throws DataAccessException;
 }

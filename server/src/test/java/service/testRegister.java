@@ -1,5 +1,7 @@
 package service;
 
+import dataaccess.DataAccessException;
+import dataaccess.FailedDataAccess;
 import dataaccess.MemoryDataAccess;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -44,5 +46,9 @@ public class testRegister {
                         new RegisterResponse.RegisterRequest(
                                 "test", "password", "test@email.com")));
         Assertions.assertNotNull(dataAccess.getUser("test"));
+
+        FailedDataAccess failedDataAccess = new FailedDataAccess();
+        Assertions.assertThrowsExactly(DataAccessException.class, () ->
+                new GameListResponse(failedDataAccess));
     }
 }
