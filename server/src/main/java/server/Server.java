@@ -25,6 +25,7 @@ public class Server {
 
         javalin.post("/user", this::registerHandler);
         javalin.post("/session", this::loginHandler);
+        javalin.delete("/session", this::logoutHandler);
         // Register your endpoints and exception handlers here.
 
         this.dataAccess = dataAccess;
@@ -36,6 +37,7 @@ public class Server {
             RegisterResponse response = new RegisterResponse(dataAccess, request);
             String auth = UUID.randomUUID().toString();
             validTokens.put(auth, request.username());
+            context.status(200);
             context.result(new Gson().toJson(Map.of("authData", auth,"username", response.username())));
         } catch (DataAccessException e) {
             context.status(500);
@@ -52,6 +54,7 @@ public class Server {
             LoginResponse response = new LoginResponse(dataAccess, request);
             String auth = UUID.randomUUID().toString();
             validTokens.put(auth, request.username());
+            context.status(200);
             context.result(new Gson().toJson(Map.of("authData", auth,"username", response.username())));
         } catch (DataAccessException e) {
             context.status(500);
@@ -60,6 +63,26 @@ public class Server {
             context.status(401);
             context.result(new Gson().toJson(Map.of("message", "Error: unauthorized")));
         }
+    }
+
+    private void logoutHandler(Context context) {
+        if (!authorized(context)) {
+            return;
+        }
+        String authToken = context.header("authorization");
+        validTokens.remove(authToken);
+        context.status(200);
+    }
+
+    private boolean authorized(Context ctx) {
+        String authToken = ctx.header("authorization");
+        if (!validTokens.containsKey(authToken)) {
+            ctx.contentType("application/json");
+            ctx.status(401);
+            ctx.result(new Gson().toJson(Map.of("message", "Error: unauthorized")));
+            return false;
+        }
+        return true;
     }
 
     private boolean authorized(Context ctx, String username) {
