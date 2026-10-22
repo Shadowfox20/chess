@@ -1,7 +1,6 @@
 package passoff.server;
 
 import chess.ChessGame;
-import dataaccess.MemoryDataAccess;
 import org.junit.jupiter.api.*;
 import passoff.model.*;
 import server.Server;
@@ -28,7 +27,7 @@ public class StandardAPITests {
 
     @BeforeAll
     public static void init() {
-        server = new Server(new MemoryDataAccess());
+        server = new Server();
         var port = server.run(0);
         System.out.println("Started test HTTP server on " + port);
 
@@ -78,8 +77,8 @@ public class StandardAPITests {
     @DisplayName("Login Bad Request")
     public void loginBadRequest() {
         TestUser[] incompleteLoginRequests = {
-                new TestUser(null, existingUser.getPassword()),
-                new TestUser(existingUser.getUsername(), null),
+            new TestUser(null, existingUser.getPassword()),
+            new TestUser(existingUser.getUsername(), null),
         };
 
         for (TestUser incompleteLoginRequest : incompleteLoginRequests) {
@@ -94,7 +93,7 @@ public class StandardAPITests {
     @Order(4)
     @DisplayName("Login Unauthorized (Multiple Forms)")
     public void loginUnauthorized() {
-        TestUser[] unauthorizedLoginRequests = {newUser, new TestUser(existingUser.getUsername(), "BAD!PASSWORD")};
+        TestUser[] unauthorizedLoginRequests = { newUser, new TestUser(existingUser.getUsername(), "BAD!PASSWORD") };
 
         for (TestUser unauthorizedLoginRequest : unauthorizedLoginRequests) {
             TestAuthResult loginResult = serverFacade.login(unauthorizedLoginRequest);
@@ -214,7 +213,7 @@ public class StandardAPITests {
 
         TestListResult listResult = serverFacade.listGames(existingAuth);
 
-        Assertions.assertNotNull(listResult.getGames(), "List result did not contain list");
+        Assertions.assertNotNull(listResult.getGames(), "List result did not contain games");
         Assertions.assertEquals(1, listResult.getGames().length, "List result is incorrect size");
         Assertions.assertEquals(existingUser.getUsername(), listResult.getGames()[0].getWhiteUsername(),
                 "Username of joined player not present in list result");
@@ -244,7 +243,7 @@ public class StandardAPITests {
         int gameID = createResult.getGameID();
 
         //If you use deserialize to the TeamColor enum instead of a String each of these will be read as null
-        for (String color : new String[]{null, "", "GREEN"}) {
+        for(String color : new String[]{null, "", "GREEN"}) {
             assertHttpBadRequest(serverFacade.joinPlayer(new TestJoinRequest(color, gameID), existingAuth));
         }
     }
@@ -294,14 +293,14 @@ public class StandardAPITests {
 
         assertHttpOk(result);
         Assertions.assertNotNull(result.getGames(), "List result did not contain an empty game list");
-        Assertions.assertEquals(0, result.getGames().length, "Found list when none should be there");
+        Assertions.assertEquals(0, result.getGames().length, "Found games when none should be there");
     }
 
     @Test
     @Order(19)
     @DisplayName("List Multiple Games")
     public void listGamesSuccess() {
-        //register a few users to create list
+        //register a few users to create games
         TestUser userA = new TestUser("a", "A", "a@mail.com");
         TestUser userB = new TestUser("b", "B", "b@mail.com");
         TestUser userC = new TestUser("c", "C", "c@mail.com");
@@ -310,7 +309,7 @@ public class StandardAPITests {
         TestAuthResult authB = serverFacade.register(userB);
         TestAuthResult authC = serverFacade.register(userC);
 
-        //create list
+        //create games
         TestListEntry[] expectedList = new TestListEntry[4];
 
         //1 as black from A
@@ -343,11 +342,11 @@ public class StandardAPITests {
         expectedList[3] = new TestListEntry(game4.getGameID(), game4Name, authC.getUsername(), authC.getUsername());
 
 
-        //list list
+        //list games
         TestListResult listResult = serverFacade.listGames(existingAuth);
         assertHttpOk(listResult);
         TestListEntry[] returnedList = listResult.getGames();
-        Assertions.assertNotNull(returnedList, "List result did not contain a list of list");
+        Assertions.assertNotNull(returnedList, "List result did not contain a list of games");
         Comparator<TestListEntry> gameIdComparator = Comparator.comparingInt(TestListEntry::getGameID);
         Arrays.sort(expectedList, gameIdComparator);
         Arrays.sort(returnedList, gameIdComparator);
@@ -378,8 +377,8 @@ public class StandardAPITests {
 
     @Test
     @Order(21)
-    @DisplayName("Authtokens Valid Individually")
-    public void uniqueAuthorizationTokensAllWork() {
+    @DisplayName("Authtokens Valid Individually") 
+    public void uniqueAuthorizationTokensAllWork(){
         TestAuthResult loginOne = serverFacade.login(existingUser);
         assertHttpOk(loginOne);
         Assertions.assertNotNull(loginOne.getAuthToken(), "Login result did not contain an authToken");
@@ -403,8 +402,8 @@ public class StandardAPITests {
 
         TestListResult listResult = serverFacade.listGames(loginTwo.getAuthToken());
         assertHttpOk(listResult);
-        Assertions.assertNotNull(listResult.getGames(), "List result did not contain list");
-        Assertions.assertEquals(1, listResult.getGames().length, "List result contains incorrect number of list");
+        Assertions.assertNotNull(listResult.getGames(), "List result did not contain games");
+        Assertions.assertEquals(1, listResult.getGames().length, "List result contains incorrect number of games");
         Assertions.assertEquals(existingUser.getUsername(), listResult.getGames()[0].getWhiteUsername(),
                 "incorrect username on joined game");
     }
@@ -413,7 +412,7 @@ public class StandardAPITests {
     @Order(22)
     @DisplayName("Clear Test")
     public void clearData() {
-        //create filler list
+        //create filler games
         serverFacade.createGame(new TestCreateRequest("Mediocre game"), existingAuth);
         serverFacade.createGame(new TestCreateRequest("Awesome game"), existingAuth);
 
@@ -443,7 +442,7 @@ public class StandardAPITests {
         loginResult = serverFacade.login(user);
         assertHttpUnauthorized(loginResult);
 
-        //try to use old auth token to list list
+        //try to use old auth token to list games
         TestListResult listResult = serverFacade.listGames(existingAuth);
         assertHttpUnauthorized(listResult);
 
@@ -454,8 +453,8 @@ public class StandardAPITests {
         assertHttpOk(listResult);
 
         //check listResult
-        Assertions.assertNotNull(listResult.getGames(), "List result did not contain an empty list of list");
-        Assertions.assertEquals(0, listResult.getGames().length, "list result did not return 0 list after clear");
+        Assertions.assertNotNull(listResult.getGames(), "List result did not contain an empty list of games");
+        Assertions.assertEquals(0, listResult.getGames().length, "list result did not return 0 games after clear");
     }
 
     @Test

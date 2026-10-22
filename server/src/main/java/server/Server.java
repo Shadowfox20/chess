@@ -19,7 +19,7 @@ public class Server {
     private DataAccess dataAccess;
     private final Gson serializer = new Gson();
 
-    public Server(DataAccess dataAccess) {
+    public Server() {
         javalin = Javalin.create(config -> config.staticFiles.add("web"));
 
         javalin.delete("/db", this::clearDB);
@@ -31,7 +31,7 @@ public class Server {
         javalin.put("/game", this::joinGameHandler);
         // Register your endpoints and exception handlers here.
 
-        this.dataAccess = dataAccess;
+        this.dataAccess = new MemoryDataAccess();
     }
 
     private void clearDB(Context context) {
@@ -80,7 +80,7 @@ public class Server {
     }
 
     private void logoutHandler(Context context) {
-        if (!authorized(context)) {
+        if (invalidAuthToken(context)) {
             return;
         }
         String authToken = context.header("authorization");
@@ -89,7 +89,7 @@ public class Server {
     }
 
     private void listGamesHandler(Context context) {
-        if (!authorized(context)) {
+        if (invalidAuthToken(context)) {
             return;
         }
         try {
@@ -104,7 +104,7 @@ public class Server {
     }
 
     private void createGameHandler(Context context) {
-        if (!authorized(context)) {
+        if (invalidAuthToken(context)) {
             return;
         }
         GameService.CreateGameRequest request = serializer.fromJson(context.body(), GameService.CreateGameRequest.class);
@@ -123,7 +123,7 @@ public class Server {
     }
 
     private void joinGameHandler(Context context) {
-        if (!authorized(context)) {
+        if (invalidAuthToken(context)) {
             return;
         }
         GameService.JoinGameRequest request = serializer.fromJson(context.body(), GameService.JoinGameRequest.class);
@@ -143,26 +143,15 @@ public class Server {
         }
     }
 
-    private boolean authorized(Context ctx) {
+    private boolean invalidAuthToken(Context ctx) {
         String authToken = ctx.header("authorization");
         if (!validTokens.containsKey(authToken)) {
             ctx.contentType("application/json");
             ctx.status(401);
             ctx.result(serializer.toJson(Map.of("message", "Error: unauthorized")));
-            return false;
+            return true;
         }
-        return true;
-    }
-
-    private boolean authorized(Context ctx, String username) {
-        String authToken = ctx.header("authorization");
-        if (!validTokens.get(authToken).equals(username)) {
-            ctx.contentType("application/json");
-            ctx.status(401);
-            ctx.result(serializer.toJson(Map.of("message", "Error: unauthorized")));
-            return false;
-        }
-        return true;
+        return false;
     }
 
     private String userFromAuth(Context ctx) {
