@@ -1,11 +1,14 @@
 package dataaccess;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 public class MemoryDataAccess implements DataAccess {
     private record user(String username, String password, String email) {}
 
     private final HashMap<String, user> userTable = new HashMap<>();
+    private final List<GameData> activeGameList = new ArrayList<>();
 
     @Override
     public UserData createUser(String username, String password, String email) {
@@ -29,5 +32,10 @@ public class MemoryDataAccess implements DataAccess {
             return null;
         }
         return new UserLogin(res.username(), res.password());
+    }
+
+    @Override
+    public List<GameData> activeGames() throws DataAccessException {
+        return activeGameList;
     }
 }

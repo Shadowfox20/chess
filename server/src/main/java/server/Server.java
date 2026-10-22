@@ -5,10 +5,7 @@ import dataaccess.DataAccessException;
 import dataaccess.DataAccess;
 import io.javalin.*;
 import io.javalin.http.Context;
-import service.AlreadyExistsException;
-import service.IncorrectLoginException;
-import service.LoginResponse;
-import service.RegisterResponse;
+import service.*;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,6 +23,7 @@ public class Server {
         javalin.post("/user", this::registerHandler);
         javalin.post("/session", this::loginHandler);
         javalin.delete("/session", this::logoutHandler);
+        javalin.get("/list", this::listGamesHandler);
         // Register your endpoints and exception handlers here.
 
         this.dataAccess = dataAccess;
@@ -72,6 +70,21 @@ public class Server {
         String authToken = context.header("authorization");
         validTokens.remove(authToken);
         context.status(200);
+    }
+
+    private void listGamesHandler(Context context) {
+        if (!authorized(context)) {
+            return;
+        }
+        try {
+            GameListResponse games = new GameListResponse(dataAccess);
+
+            context.status(200);
+            context.result(new Gson().toJson(Map.of("list", games.list())));
+        } catch (DataAccessException e) {
+            context.status(500);
+            context.result(new Gson().toJson(Map.of("message", "Error: " + e.getMessage())));
+        }
     }
 
     private boolean authorized(Context ctx) {
