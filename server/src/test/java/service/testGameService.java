@@ -66,4 +66,38 @@ public class testGameService {
         Assertions.assertThrowsExactly(DataAccessException.class, () ->
                 GameService.createGame(failedDataAccess, new GameService.CreateGameRequest("game 1")));
     }
+
+    @Test
+    @Order(5)
+    @DisplayName("Join Game Success")
+    public void joinGameSuccess() {
+        MemoryDataAccess dataAccess = new MemoryDataAccess();
+        dataAccess.addGame("game 1");
+        dataAccess.addGame("game 2");
+        List<GameData> expected = List.of(new GameData[]{
+                new GameData(1, "test-user", null, "game 1"),
+                new GameData(2, null, null, "game 2"),
+        });
+        Assertions.assertDoesNotThrow(() ->
+                GameService.joinGame(dataAccess, new GameService.JoinGameRequest(1, "WHITE", "test-user")));
+        Assertions.assertEquals(expected, dataAccess.activeGames());
+    }
+
+    @Test
+    @Order(4)
+    @DisplayName("Join Game Exceptions")
+    public void joinGameExceptions() {
+        MemoryDataAccess dataAccess = new MemoryDataAccess();
+        Assertions.assertThrowsExactly(BadRequestException.class, () ->
+                GameService.joinGame(dataAccess, new GameService.JoinGameRequest(1, "WHITE", "test-user")));
+        dataAccess.addGame("game 1");
+        Assertions.assertDoesNotThrow(() ->
+                GameService.joinGame(dataAccess, new GameService.JoinGameRequest(1, "WHITE", "test-user")));
+        Assertions.assertThrowsExactly(AlreadyExistsException.class, () ->
+                GameService.joinGame(dataAccess, new GameService.JoinGameRequest(1, "WHITE", "test-user")));
+
+        FailedDataAccess failedDataAccess = new FailedDataAccess();
+        Assertions.assertThrowsExactly(DataAccessException.class, () ->
+                GameService.joinGame(failedDataAccess, new GameService.JoinGameRequest(1, "WHITE", "test-user")));
+    }
 }
