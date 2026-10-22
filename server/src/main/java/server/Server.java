@@ -26,7 +26,9 @@ public class Server {
         javalin.post("/user", this::registerHandler);
         javalin.post("/session", this::loginHandler);
         javalin.delete("/session", this::logoutHandler);
-        javalin.get("/list", this::listGamesHandler);
+        javalin.get("/game", this::listGamesHandler);
+        javalin.post("/game", this::createGameHandler);
+        javalin.put("/game", this::joinGameHandler);
         // Register your endpoints and exception handlers here.
 
         this.dataAccess = dataAccess;
@@ -39,7 +41,7 @@ public class Server {
     private void registerHandler(Context context) {
         UserService.RegisterRequest request = serializer.fromJson(context.body(), UserService.RegisterRequest.class);
         try {
-            UserService.RegisterResponse response = UserService.Register(dataAccess, request);
+            UserService.RegisterResponse response = UserService.register(dataAccess, request);
             String auth = UUID.randomUUID().toString();
             validTokens.put(auth, request.username());
             context.status(200);
@@ -52,14 +54,14 @@ public class Server {
             context.result(serializer.toJson(Map.of("message", "Error: already taken")));
         } catch (BadRequestException e) {
             context.status(400);
-            context.result(serializer.toJson(Map.of("message", "Error: bad request")));
+            context.result(serializer.toJson(Map.of("message", "Error: bad request: " + e.getMessage())));
         }
     }
 
     private void loginHandler(Context context) {
         UserService.LoginRequest request = serializer.fromJson(context.body(), UserService.LoginRequest.class);
         try {
-            UserService.LoginResponse response = UserService.Login(dataAccess, request);
+            UserService.LoginResponse response = UserService.login(dataAccess, request);
             String auth = UUID.randomUUID().toString();
             validTokens.put(auth, request.username());
             context.status(200);
@@ -72,7 +74,7 @@ public class Server {
             context.result(serializer.toJson(Map.of("message", "Error: unauthorized")));
         } catch (BadRequestException e) {
             context.status(400);
-            context.result(serializer.toJson(Map.of("message", "Error: bad request")));
+            context.result(serializer.toJson(Map.of("message", "Error: bad request: " + e.getMessage())));
         }
     }
 
@@ -93,10 +95,50 @@ public class Server {
             GameService.GameListResponse games = GameService.GameList(dataAccess);
 
             context.status(200);
-            context.result(serializer.toJson(Map.of("list", games.list())));
+            context.result(serializer.toJson(games));
         } catch (DataAccessException e) {
             context.status(500);
             context.result(serializer.toJson(Map.of("message", "Error: " + e.getMessage())));
+        }
+    }
+
+    private void createGameHandler(Context context) {
+        if (!authorized(context)) {
+            return;
+        }
+        GameService.CreateGameRequest request = serializer.fromJson(context.body(), GameService.CreateGameRequest.class);
+        try {
+            GameService.CreateGameResponse game = GameService.createGame(dataAccess, request);
+
+            context.status(200);
+            context.result(serializer.toJson(game));
+        } catch (DataAccessException e) {
+            context.status(500);
+            context.result(serializer.toJson(Map.of("message", "Error: " + e.getMessage())));
+        } catch (BadRequestException e) {
+            context.status(400);
+            context.result(serializer.toJson(Map.of("message", "Error: bad request: " + e.getMessage())));
+        }
+    }
+
+    private void joinGameHandler(Context context) {
+        if (!authorized(context)) {
+            return;
+        }
+        GameService.JoinGameRequest request = serializer.fromJson(context.body(), GameService.JoinGameRequest.class);
+        try {
+            GameService.JoinGameRequest userReq = new GameService.JoinGameRequest(request.gameID(), request.playerColor(), userFromAuth(context));
+            GameService.joinGame(dataAccess, request);
+            context.status(200);
+        } catch (DataAccessException e) {
+            context.status(500);
+            context.result(serializer.toJson(Map.of("message", "Error: " + e.getMessage())));
+        } catch (AlreadyExistsException e) {
+            context.status(403);
+            context.result(serializer.toJson(Map.of("message", "Error: already taken")));
+        } catch (BadRequestException e) {
+            context.status(400);
+            context.result(serializer.toJson(Map.of("message", "Error: bad request: " + e.getMessage())));
         }
     }
 

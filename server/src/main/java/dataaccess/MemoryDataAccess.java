@@ -48,4 +48,12 @@ public class MemoryDataAccess implements DataAccess {
         activeGameList.add(newGame);
         return newGame;
     }
+
+    @Override
+    public GameData getGame(int gameID) {
+        if (gameID > activeGameList.size()) {
+            return null;
+        }
+        return activeGameList.get(gameID - 1);
+    }
 }

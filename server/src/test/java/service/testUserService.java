@@ -17,13 +17,13 @@ public class testUserService {
 
         Assertions.assertDoesNotThrow(() ->
                 Assertions.assertEquals(
-                        "test", UserService.Register(dataAccess,
+                        "test", UserService.register(dataAccess,
                                 new UserService.RegisterRequest(
                                         "test", "password", "test@email.com")).username()));
 
         Assertions.assertDoesNotThrow(() ->
                 Assertions.assertEquals(
-                        "test2", UserService.Register(dataAccess,
+                        "test2", UserService.register(dataAccess,
                                 new UserService.RegisterRequest(
                                         "test2", "password", "test2@email.com")).username()));
         Assertions.assertNotNull(dataAccess.getUser("test"));
@@ -38,18 +38,18 @@ public class testUserService {
 
         Assertions.assertDoesNotThrow(() ->
                 Assertions.assertEquals(
-                        "test", UserService.Register(dataAccess,
+                        "test", UserService.register(dataAccess,
                                 new UserService.RegisterRequest(
                                         "test", "password", "test@email.com")).username()));
         Assertions.assertThrowsExactly(AlreadyExistsException.class, () ->
-                UserService.Register(dataAccess,
+                UserService.register(dataAccess,
                         new UserService.RegisterRequest(
                                 "test", "password", "test@email.com")));
         Assertions.assertNotNull(dataAccess.getUser("test"));
 
         FailedDataAccess failedDataAccess = new FailedDataAccess();
         Assertions.assertThrowsExactly(DataAccessException.class, () ->
-                UserService.Register(failedDataAccess,
+                UserService.register(failedDataAccess,
                         new UserService.RegisterRequest(
                                 "test", "password", "test@email.com")));
     }
@@ -63,7 +63,7 @@ public class testUserService {
 
         Assertions.assertDoesNotThrow(() ->
                 Assertions.assertEquals(
-                        "test", UserService.Login(dataAccess,
+                        "test", UserService.login(dataAccess,
                                 new UserService.LoginRequest(
                                         "test", "password")).username()));
     }
@@ -76,13 +76,13 @@ public class testUserService {
         dataAccess.createUser("test", "password", "test@email.com");
 
         Assertions.assertThrowsExactly(IncorrectLoginException.class, () ->
-                UserService.Login(dataAccess,
+                UserService.login(dataAccess,
                         new UserService.LoginRequest(
                                 "test", "not-password")));
 
         FailedDataAccess failedDataAccess = new FailedDataAccess();
         Assertions.assertThrowsExactly(DataAccessException.class, () ->
-                UserService.Login(failedDataAccess, new UserService.LoginRequest(
+                UserService.login(failedDataAccess, new UserService.LoginRequest(
                         "test", "not-password")));
     }
 }
