@@ -44,6 +44,8 @@ public class TestDBDataAccess {
             Assertions.assertTrue(dbDataAccess.validAuth("test_auth"));
             String user = dbDataAccess.userFromAuth("test_auth");
             Assertions.assertEquals("test_user", user);
+            dbDataAccess.removeAuth("test_auth");
+            Assertions.assertFalse(dbDataAccess.validAuth("test_auth"));
         } catch (DataAccessException e) {
             throw new AssertionFailedError("unexpected error: " + e.getMessage());
         }
