@@ -4,9 +4,7 @@ import model.GameData;
 import model.UserData;
 import org.mindrot.jbcrypt.BCrypt;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -62,20 +60,18 @@ public class DBDataAccess implements DataAccess{
     }
 
     @Override
-    public UserData getUser(String username) throws DataAccessException {
+    public boolean userExists(String username) throws DataAccessException {
         try (var connection = DatabaseManager.getConnection()) {
             verifyUserTable(connection);
             Statement statement = connection.createStatement();
             String query = """
-            SELECT username
+            SELECT EXISTS (
+                    SELECT 1
             FROM users
-            WHERE username = '""" + username + "';";
+            WHERE username = '""" + username + "');";
             var res = statement.executeQuery(query);
-            UserData data = null;
-            if (res.next()) {
-                data = new UserData(res.getString(1));
-            }
-            return data;
+            res.next();
+            return res.getBoolean(1);
         } catch (SQLException e) {
             throw new DataAccessException(e.getMessage());
         }
@@ -98,6 +94,85 @@ public class DBDataAccess implements DataAccess{
         }
     }
 
+    private void verifyAuthTable(Connection c)  throws SQLException {
+        if (tableExists(c, "auth_tokens")) {
+            return;
+        }
+        Statement statement = c.createStatement();
+        String query = """
+        CREATE TABLE auth_tokens (
+            username VARCHAR(128) NOT NULL,
+            authToken VARCHAR(128) UNIQUE NOT NULL
+        );
+        """;
+        statement.execute(query);
+    }
+
+    @Override
+    public boolean validAuth(String auth) throws DataAccessException {
+        try (var connection = DatabaseManager.getConnection()) {
+            verifyAuthTable(connection);
+            Statement statement = connection.createStatement();
+            String query = """
+            SELECT EXISTS (
+                SELECT 1
+                FROM auth_tokens
+                WHERE authToken = '""" + auth + "');";
+            var res = statement.executeQuery(query);
+            res.next();
+            return res.getBoolean(1);
+        } catch (SQLException e) {
+            throw new DataAccessException(e.getMessage());
+        }
+    }
+
+    public void addAuth(String auth, String username) throws DataAccessException {
+        try (var connection = DatabaseManager.getConnection()) {
+            verifyAuthTable(connection);
+            Statement statement = connection.createStatement();
+            String query = """
+            INSERT INTO auth_tokens (
+                authToken,
+                username
+            )
+            VALUE ('""" + auth + "', '" + username + "');";
+            statement.execute(query);
+        } catch (SQLException e) {
+            throw new DataAccessException(e.getMessage());
+        }
+    }
+
+    @Override
+    public String userFromAuth(String auth) throws DataAccessException {
+        try (var connection = DatabaseManager.getConnection()) {
+            verifyAuthTable(connection);
+            Statement statement = connection.createStatement();
+            String query = """
+            SELECT username
+            FROM auth_tokens
+            WHERE authToken = '""" + auth + "';";
+            var res = statement.executeQuery(query);
+            if (!res.next()) {
+                return null;
+            }
+            return res.getString(1);
+        } catch (SQLException e) {
+            throw new DataAccessException(e.getMessage());
+        }
+    }
+
+    @Override
+    public void removeAuth(String auth) throws DataAccessException {
+        try (var connection = DatabaseManager.getConnection()) {
+            verifyAuthTable(connection);
+            Statement statement = connection.createStatement();
+            String query = "DELETE FROM auth_tokens WHERE authToken = '" + auth + "';";
+            statement.execute(query);
+        } catch (SQLException e) {
+            throw new DataAccessException(e.getMessage());
+        }
+    }
+
     private static void verifyGameTable(Connection c) throws SQLException {
         if (tableExists(c, "active_games")) {
             return;
@@ -105,7 +180,7 @@ public class DBDataAccess implements DataAccess{
         Statement statement = c.createStatement();
         String query = """
         CREATE TABLE active_games (
-            gameID INT PRIMARY KEY AUTO_INCREMENT,
+            gameID INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
             whiteUsername VARCHAR(128),
             blackUsername VARCHAR(128),
             gameName VARCHAR(128) NOT NULL
@@ -118,21 +193,21 @@ public class DBDataAccess implements DataAccess{
     public GameData addGame(String name) throws DataAccessException {
         try (var connection = DatabaseManager.getConnection()) {
             verifyGameTable(connection);
-            Statement statement = connection.createStatement();
-            String query = """
-            INSERT INTO active_games (
-                gameName
-            ) VALUE ('""" + name + "');";
-            statement.execute(query);
-            query = """
-            SELECT gameID, whiteUsername, blackUsername, gameName
-            FROM active_games
-            WHERE gameName = '""" + name + "';";
-            var res = statement.executeQuery(query);
-            if (res.next()) {
-                return new GameData(res.getInt(1), res.getString(2), res.getString(3), res.getString(4));
+            try (PreparedStatement pstmt = connection.prepareStatement("""
+                    INSERT INTO active_games (
+                        gameName
+                    ) VALUE (?);
+                    """, Statement.RETURN_GENERATED_KEYS)) {
+                pstmt.setString(1, name);
+                pstmt.executeUpdate();
+                try (ResultSet generatedKeys = pstmt.getGeneratedKeys()) {
+                    if (generatedKeys.next()) {
+                        int generatedId = generatedKeys.getInt(1);
+                        return new GameData(generatedId, null, null, name);
+                    }
+                }
+                return null;
             }
-            return null;
         } catch (SQLException e) {
             throw new DataAccessException(e.getMessage());
         }
@@ -189,8 +264,8 @@ public class DBDataAccess implements DataAccess{
             Statement statement = connection.createStatement();
             String query = """
             UPDATE active_games
-            SET\s""" + team + " = '" + username + "'" + """
-            WHERE gameID =\s""" + gameID + ";";
+            SET\s""" + team + " = '" + username + "'" +
+            " WHERE gameID = " + gameID + ";";
             statement.execute(query);
         } catch (SQLException e) {
             throw new DataAccessException(e.getMessage());

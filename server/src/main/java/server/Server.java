@@ -91,7 +91,6 @@ public class Server {
         } catch (DataAccessException e) {
             context.status(500);
             context.result(serializer.toJson(Map.of("message", "Error: " + e.getMessage())));
-            throw new RuntimeException(e);
         }
     }
 

@@ -6,6 +6,8 @@ import dataaccess.UserLogin;
 import model.UserData;
 import org.mindrot.jbcrypt.BCrypt;
 
+import java.util.UUID;
+
 public class UserService {
     public record RegisterRequest(String username, String password, String email) {}
 
@@ -17,11 +19,13 @@ public class UserService {
                 request.username().isEmpty() || request.password().isEmpty() || request.email().isEmpty()) {
             throw new BadRequestException("all fields are required");
         }
-        if (data.getUser(request.username()) != null) {
+        if (data.userExists(request.username())) {
             throw new AlreadyExistsException("username already exists");
         }
         UserData resp = data.createUser(request.username(), request.password(), request.email());
-        return new RegisterResponse(resp.username(), resp.auth());
+        String auth = UUID.randomUUID().toString();
+        data.addAuth(auth, request.username());
+        return new RegisterResponse(resp.username(), auth);
     }
 
     public record LoginRequest(String username, String password) {}
@@ -41,7 +45,9 @@ public class UserService {
         if (!BCrypt.checkpw(request.password(), userLogin.hashedPassword())) {
             throw new IncorrectLoginException("incorrect password");
         }
-        return new LoginResponse(userLogin.username(), userLogin.auth());
+        String auth = UUID.randomUUID().toString();
+        data.addAuth(auth, request.username());
+        return new LoginResponse(userLogin.username(), auth);
     }
 
     public static boolean InvalidAuth(DataAccess dataAccess, String auth) throws DataAccessException {

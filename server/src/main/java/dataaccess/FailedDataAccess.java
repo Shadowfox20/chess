@@ -12,7 +12,7 @@ public class FailedDataAccess implements DataAccess{
     }
 
     @Override
-    public UserData getUser(String username) throws DataAccessException {
+    public boolean userExists(String username) throws DataAccessException {
         throw new DataAccessException("test-getUser");
     }
 
@@ -44,5 +44,25 @@ public class FailedDataAccess implements DataAccess{
     @Override
     public void clear() throws DataAccessException {
         throw new DataAccessException("test-clear");
+    }
+
+    @Override
+    public boolean validAuth(String auth) throws DataAccessException {
+        throw new DataAccessException("test-validAuth");
+    }
+
+    @Override
+    public String userFromAuth(String auth) throws DataAccessException {
+        throw new DataAccessException("test-userFromAuth");
+    }
+
+    @Override
+    public void removeAuth(String auth) throws DataAccessException {
+        throw new DataAccessException("test-removeAuth");
+    }
+
+    @Override
+    public void addAuth(String auth, String username) throws DataAccessException {
+        throw new DataAccessException("test-addAuth");
     }
 }
