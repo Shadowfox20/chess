@@ -168,7 +168,7 @@ public class DatabaseTests {
                     String value = rs.getString(i);
                     if (value != null){
                         Assertions.assertFalse(value.contains(TEST_USER.getPassword()),
-                            "Found clear text hashedPassword in database");
+                            "Found clear text password in database");
                     }
                 }
             }
