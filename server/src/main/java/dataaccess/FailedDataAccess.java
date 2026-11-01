@@ -40,4 +40,9 @@ public class FailedDataAccess implements DataAccess{
     public void joinGame(int gameID, boolean whiteTeam, String username) throws DataAccessException {
         throw new DataAccessException("test-joinGame");
     }
+
+    @Override
+    public void clear() throws DataAccessException {
+        throw new DataAccessException("test-clear");
+    }
 }

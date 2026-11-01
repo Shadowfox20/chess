@@ -2,6 +2,7 @@ package dataaccess;
 
 import model.GameData;
 import model.UserData;
+import org.mindrot.jbcrypt.BCrypt;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -19,9 +20,10 @@ public class DBDataAccess implements DataAccess{
             SELECT EXISTS (
                 SELECT 1
                 FROM INFORMATION_SCHEMA.TABLES
-                WHERE TABLE_SCHEMA = 'mysql'
+                WHERE TABLE_SCHEMA = DATABASE()
                 AND TABLE_NAME = """ + table + ");";
-        return statement.execute(query);
+        var res = statement.executeQuery(query);
+        return res.getBoolean(1);
     }
 
     private static void verifyUserTable(Connection c) throws SQLException {
@@ -30,19 +32,47 @@ public class DBDataAccess implements DataAccess{
         }
         Statement statement = c.createStatement();
         String query = """
-            CREATE TABLE users (username VARCHAR(128), password VARCHAR(128), email VARCHAR(128));
+        CREATE TABLE users (
+            username VARCHAR(128),
+            password VARCHAR(128),
+            email VARCHAR(128)
+        );
         """;
         statement.execute(query);
     }
 
     @Override
     public UserData createUser(String username, String password, String email) throws DataAccessException {
-        return null;
+        try (var connection = DatabaseManager.getConnection()) {
+            verifyUserTable(connection);
+            Statement statement = connection.createStatement();
+            String query = """
+            INSERT INTO users (
+                username,
+                password,
+                email
+            ) VALUES (""" + username + ", " + BCrypt.hashpw(password, BCrypt.gensalt()) + ", " + email + ");";
+            statement.execute(query);
+        } catch (SQLException e) {
+            throw new DataAccessException(e.getMessage());
+        }
+        return new UserData(username);
     }
 
     @Override
     public UserData getUser(String username) throws DataAccessException {
-        return null;
+        try (var connection = DatabaseManager.getConnection()) {
+            verifyUserTable(connection);
+            Statement statement = connection.createStatement();
+            String query = "SELECT username FROM users WHERE username = " + username + ");";
+            var res = statement.executeQuery(query);
+            if (res.first()) {
+                return new UserData(res.getString(1));
+            }
+            return null;
+        } catch (SQLException e) {
+            throw new DataAccessException(e.getMessage());
+        }
     }
 
     @Override
@@ -56,12 +86,12 @@ public class DBDataAccess implements DataAccess{
         }
         Statement statement = c.createStatement();
         String query = """
-            CREATE TABLE active_games (
-                gameID INT AUTO_INCREMENT,
-                whiteUsername VARCHAR(128),
-                blackUsername VARCHAR(128),
-                gameName VARCHAR(128),
-                PRIMARY KEY (gameID)
+        CREATE TABLE active_games (
+            gameID INT AUTO_INCREMENT,
+            whiteUsername VARCHAR(128),
+            blackUsername VARCHAR(128),
+            gameName VARCHAR(128),
+            PRIMARY KEY (gameID)
         );
         """;
         statement.execute(query);
