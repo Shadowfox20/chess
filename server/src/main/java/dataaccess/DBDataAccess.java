@@ -77,7 +77,18 @@ public class DBDataAccess implements DataAccess{
 
     @Override
     public UserLogin getUserLogin(String username) throws DataAccessException {
-        return null;
+        try (var connection = DatabaseManager.getConnection()) {
+            verifyUserTable(connection);
+            Statement statement = connection.createStatement();
+            String query = "SELECT username, password FROM users WHERE username = " + username + ");";
+            var res = statement.executeQuery(query);
+            if (res.first()) {
+                return new UserLogin(res.getString(1), res.getString(2));
+            }
+            return null;
+        } catch (SQLException e) {
+            throw new DataAccessException(e.getMessage());
+        }
     }
 
     private static void verifyGameTable(Connection c) throws SQLException {
