@@ -51,7 +51,7 @@ public class DBDataAccess implements DataAccess{
                 username,
                 password,
                 email
-            ) VALUES (""" + username + ", " + BCrypt.hashpw(password, BCrypt.gensalt()) + ", " + email + ");";
+            ) VALUE (""" + username + ", " + BCrypt.hashpw(password, BCrypt.gensalt()) + ", " + email + ");";
             statement.execute(query);
         } catch (SQLException e) {
             throw new DataAccessException(e.getMessage());
@@ -66,10 +66,11 @@ public class DBDataAccess implements DataAccess{
             Statement statement = connection.createStatement();
             String query = "SELECT username FROM users WHERE username = " + username + ");";
             var res = statement.executeQuery(query);
+            UserData data = null;
             if (res.first()) {
-                return new UserData(res.getString(1));
+                data = new UserData(res.getString(1));
             }
-            return null;
+            return data;
         } catch (SQLException e) {
             throw new DataAccessException(e.getMessage());
         }
@@ -82,10 +83,11 @@ public class DBDataAccess implements DataAccess{
             Statement statement = connection.createStatement();
             String query = "SELECT username, password FROM users WHERE username = " + username + ");";
             var res = statement.executeQuery(query);
+            UserLogin login = null;
             if (res.first()) {
-                return new UserLogin(res.getString(1), res.getString(2));
+                login = new UserLogin(res.getString(1), res.getString(2));
             }
-            return null;
+            return login;
         } catch (SQLException e) {
             throw new DataAccessException(e.getMessage());
         }
@@ -110,7 +112,23 @@ public class DBDataAccess implements DataAccess{
 
     @Override
     public GameData addGame(String name) throws DataAccessException {
-        return null;
+        try (var connection = DatabaseManager.getConnection()) {
+            verifyGameTable(connection);
+            Statement statement = connection.createStatement();
+            String query = """
+            INSERT INTO active_games (
+                gameName
+            ) VALUE (""" + name + ");";
+            statement.execute(query);
+            query = "SELECT gameID, whiteUsername, blackUsername, gameName FROM active_games WHERE gameName = " + name + ");";
+            var res = statement.executeQuery(query);
+            if (res.first()) {
+                return new GameData(res.getInt(1), res.getString(2), res.getString(3), res.getString(4));
+            }
+            return null;
+        } catch (SQLException e) {
+            throw new DataAccessException(e.getMessage());
+        }
     }
 
     @Override
