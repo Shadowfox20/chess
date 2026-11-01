@@ -1,6 +1,7 @@
 package server;
 
 import com.google.gson.Gson;
+import dataaccess.DBDataAccess;
 import dataaccess.DataAccessException;
 import dataaccess.DataAccess;
 import dataaccess.MemoryDataAccess;
@@ -16,7 +17,7 @@ public class Server {
 
     private final Javalin javalin;
     final private HashMap<String, String> validTokens = new HashMap<>();
-    private DataAccess dataAccess;
+    private final DataAccess dataAccess;
     private final Gson serializer = new Gson();
 
     public Server() {
@@ -31,7 +32,11 @@ public class Server {
         javalin.put("/game", this::joinGameHandler);
         // Register your endpoints and exception handlers here.
 
-        this.dataAccess = new MemoryDataAccess();
+        try {
+            this.dataAccess = new DBDataAccess();
+        } catch (DataAccessException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void clearDB(Context context) {

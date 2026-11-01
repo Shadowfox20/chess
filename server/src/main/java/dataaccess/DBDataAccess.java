@@ -22,8 +22,9 @@ public class DBDataAccess implements DataAccess{
                 SELECT 1
                 FROM INFORMATION_SCHEMA.TABLES
                 WHERE TABLE_SCHEMA = DATABASE()
-                AND TABLE_NAME = '""" + table + "';";
+                AND TABLE_NAME = '""" + table + "');";
         var res = statement.executeQuery(query);
+        res.next();
         return res.getBoolean(1);
     }
 
@@ -52,7 +53,7 @@ public class DBDataAccess implements DataAccess{
                 username,
                 password,
                 email
-            ) VALUE (""" + username + ", " + BCrypt.hashpw(password, BCrypt.gensalt()) + ", " + email + ");";
+            ) VALUE ('""" + username + "', '" + BCrypt.hashpw(password, BCrypt.gensalt()) + "', '" + email + "');";
             statement.execute(query);
         } catch (SQLException e) {
             throw new DataAccessException(e.getMessage());
@@ -71,7 +72,7 @@ public class DBDataAccess implements DataAccess{
             WHERE username = '""" + username + "';";
             var res = statement.executeQuery(query);
             UserData data = null;
-            if (res.first()) {
+            if (res.next()) {
                 data = new UserData(res.getString(1));
             }
             return data;
@@ -85,10 +86,10 @@ public class DBDataAccess implements DataAccess{
         try (var connection = DatabaseManager.getConnection()) {
             verifyUserTable(connection);
             Statement statement = connection.createStatement();
-            String query = "SELECT username, password FROM users WHERE username = " + username + ";";
+            String query = "SELECT username, password FROM users WHERE username = '" + username + "';";
             var res = statement.executeQuery(query);
             UserLogin login = null;
-            if (res.first()) {
+            if (res.next()) {
                 login = new UserLogin(res.getString(1), res.getString(2));
             }
             return login;
@@ -104,10 +105,10 @@ public class DBDataAccess implements DataAccess{
         Statement statement = c.createStatement();
         String query = """
         CREATE TABLE active_games (
-            gameID INT AUTO_INCREMENT PRIMARY KEY,
+            gameID INT PRIMARY KEY AUTO_INCREMENT,
             whiteUsername VARCHAR(128),
             blackUsername VARCHAR(128),
-            gameName VARCHAR(128) NOT NULL,
+            gameName VARCHAR(128) NOT NULL
         );
         """;
         statement.execute(query);
@@ -125,10 +126,10 @@ public class DBDataAccess implements DataAccess{
             statement.execute(query);
             query = """
             SELECT gameID, whiteUsername, blackUsername, gameName
-            FROM active_games 
+            FROM active_games
             WHERE gameName = '""" + name + "';";
             var res = statement.executeQuery(query);
-            if (res.first()) {
+            if (res.next()) {
                 return new GameData(res.getInt(1), res.getString(2), res.getString(3), res.getString(4));
             }
             return null;
@@ -145,9 +146,9 @@ public class DBDataAccess implements DataAccess{
             String query = """
             SELECT gameID, whiteUsername, blackUsername, gameName
             FROM active_games
-            WHERE gameID = """ + gameID + ";";
+            WHERE gameID =\s""" + gameID + ";";
             var res = statement.executeQuery(query);
-            if (res.first()) {
+            if (res.next()) {
                 return new GameData(res.getInt(1), res.getString(2), res.getString(3), res.getString(4));
             }
             return null;
@@ -188,9 +189,9 @@ public class DBDataAccess implements DataAccess{
             Statement statement = connection.createStatement();
             String query = """
             UPDATE active_games
-            SET """ + team + " = '" + username + "'" + """
-            WHERE gameID = """ + gameID + ";";
-            statement.executeQuery(query);
+            SET\s""" + team + " = '" + username + "'" + """
+            WHERE gameID =\s""" + gameID + ";";
+            statement.execute(query);
         } catch (SQLException e) {
             throw new DataAccessException(e.getMessage());
         }
@@ -200,10 +201,8 @@ public class DBDataAccess implements DataAccess{
     public void clear() throws DataAccessException {
         try (var connection = DatabaseManager.getConnection()) {
             Statement statement = connection.createStatement();
-            String query = """
-            DROP DATABASE DATABASE();
-            """;
-            statement.executeQuery(query);
+            String query = "DROP DATABASE chess;";
+            statement.execute(query);
         } catch (SQLException e) {
             throw new DataAccessException(e.getMessage());
         }
