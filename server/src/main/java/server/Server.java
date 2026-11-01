@@ -35,8 +35,12 @@ public class Server {
     }
 
     private void clearDB(Context context) {
-        dataAccess = new MemoryDataAccess();
-        validTokens.clear();
+        try {
+            DataService.Clear(dataAccess);
+        } catch (DataAccessException e) {
+            context.status(500);
+            context.result(serializer.toJson(Map.of("message", "Error: " + e.getMessage())));
+        }
     }
 
     private void registerHandler(Context context) {

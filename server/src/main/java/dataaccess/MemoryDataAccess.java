@@ -10,8 +10,8 @@ import java.util.List;
 
 public class MemoryDataAccess implements DataAccess {
     private record User(String username, String password, String email) {}
-    private final HashMap<String, User> userTable = new HashMap<>();
-    private final List<GameData> activeGameList = new ArrayList<>(0);
+    private HashMap<String, User> userTable = new HashMap<>();
+    private List<GameData> activeGameList = new ArrayList<>(0);
 
     @Override
     public UserData createUser(String username, String password, String email) {
@@ -63,4 +63,11 @@ public class MemoryDataAccess implements DataAccess {
         String whiteUser = whiteTeam ? username : gameData.whiteUsername();
         String blackUser = whiteTeam ? gameData.blackUsername() : username;
         activeGameList.set(gameID - 1, new GameData(gameID, whiteUser, blackUser, gameData.gameName()));
-    }}
+    }
+
+    @Override
+    public void clear() throws DataAccessException {
+        userTable = new HashMap<>();
+        activeGameList = new ArrayList<>(0);
+    }
+}
