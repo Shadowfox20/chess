@@ -17,16 +17,12 @@ public class MemoryDataAccess implements DataAccess {
         userTable.put(username, new User(username, BCrypt.hashpw(password, BCrypt.gensalt()), email));
         String auth = UUID.randomUUID().toString();
         validTokens.put(auth, username);
-        return getUser(username);
+        return new UserData(userTable.get(username).username());
     }
 
     @Override
-    public UserData getUser(String username) {
-        User res = userTable.get(username);
-        if (res == null) {
-            return null;
-        }
-        return new UserData(res.username(), validTokens.get(username));
+    public boolean userExists(String username) {
+        return userTable.containsKey(username);
     }
 
     @Override
@@ -35,7 +31,7 @@ public class MemoryDataAccess implements DataAccess {
         if (res == null) {
             return null;
         }
-        return new UserLogin(res.username(), res.password(), validTokens.get(username));
+        return new UserLogin(res.username(), res.password());
     }
 
     @Override
@@ -86,5 +82,10 @@ public class MemoryDataAccess implements DataAccess {
     @Override
     public void removeAuth(String auth) {
         validTokens.remove(auth);
+    }
+
+    @Override
+    public void addAuth(String auth, String username) {
+        validTokens.put(username, auth);
     }
 }
