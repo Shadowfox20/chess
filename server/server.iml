@@ -15,5 +15,7 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="google.code.gson" level="project" />
     <orderEntry type="library" scope="TEST" name="junit.jupiter" level="project" />
+    <orderEntry type="library" name="mysql.connector.j" level="project" />
+    <orderEntry type="library" name="mindrot.jbcrypt" level="project" />
   </component>
 </module>

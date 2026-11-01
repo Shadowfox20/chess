@@ -3,8 +3,7 @@ package service;
 import dataaccess.DataAccess;
 import dataaccess.DataAccessException;
 import dataaccess.UserLogin;
-
-import java.util.Objects;
+import org.mindrot.jbcrypt.BCrypt;
 
 public class UserService {
     public record RegisterRequest(String username, String password, String email) {}
@@ -37,7 +36,7 @@ public class UserService {
         if (userLogin == null) {
             throw new IncorrectLoginException("username not found");
         }
-        if (!Objects.equals(userLogin.password(), request.password())) {
+        if (!BCrypt.checkpw(request.password(), userLogin.hashedPassword())) {
             throw new IncorrectLoginException("incorrect password");
         }
         return new LoginResponse(userLogin.username());

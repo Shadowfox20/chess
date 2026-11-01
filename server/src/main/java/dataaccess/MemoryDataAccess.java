@@ -2,6 +2,7 @@ package dataaccess;
 
 import model.GameData;
 import model.UserData;
+import org.mindrot.jbcrypt.BCrypt;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -9,13 +10,12 @@ import java.util.List;
 
 public class MemoryDataAccess implements DataAccess {
     private record User(String username, String password, String email) {}
-
     private final HashMap<String, User> userTable = new HashMap<>();
     private final List<GameData> activeGameList = new ArrayList<>(0);
 
     @Override
     public UserData createUser(String username, String password, String email) {
-        userTable.put(username, new User(username, password, email));
+        userTable.put(username, new User(username, BCrypt.hashpw(password, BCrypt.gensalt()), email));
         return getUser(username);
     }
 
