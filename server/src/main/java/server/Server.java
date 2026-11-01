@@ -1,7 +1,7 @@
 package server;
 
 import com.google.gson.Gson;
-import dataaccess.DBDataAccess;
+import dataaccess.sql.DBDataAccess;
 import dataaccess.DataAccessException;
 import dataaccess.DataAccess;
 import io.javalin.*;

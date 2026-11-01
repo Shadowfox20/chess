@@ -1,5 +1,8 @@
-package dataaccess;
+package dataaccess.sql;
 
+import dataaccess.DataAccess;
+import dataaccess.DataAccessException;
+import dataaccess.UserLogin;
 import model.GameData;
 import model.UserData;
 import org.mindrot.jbcrypt.BCrypt;
@@ -8,7 +11,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class DBDataAccess implements DataAccess{
+public class DBDataAccess implements DataAccess {
     public DBDataAccess() throws DataAccessException {
         DatabaseManager.createDatabase();
     }
