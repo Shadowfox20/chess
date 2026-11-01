@@ -179,9 +179,24 @@ public class DBDataAccess implements DataAccess{
 
     @Override
     public void joinGame(int gameID, boolean whiteTeam, String username) throws DataAccessException {
+        try (var connection = DatabaseManager.getConnection()) {
+            String team = "blackUsername";
+            if (whiteTeam) {
+                team = "whiteUsername";
+            }
+            verifyGameTable(connection);
+            Statement statement = connection.createStatement();
+            String query = """
+            UPDATE active_games
+            SET """ + team + " = '" + username + "'" + """
+            WHERE gameID = """ + gameID + ";";
+            statement.executeQuery(query);
+        } catch (SQLException e) {
+            throw new DataAccessException(e.getMessage());
+        }
     }
 
+    @Override
     public void clear() throws DataAccessException {
-
     }
 }
