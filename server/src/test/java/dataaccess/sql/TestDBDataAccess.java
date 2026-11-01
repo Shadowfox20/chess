@@ -1,6 +1,5 @@
-package dataAccess;
+package dataaccess.sql;
 
-import dataaccess.sql.DBDataAccess;
 import dataaccess.DataAccessException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
