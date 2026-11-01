@@ -50,15 +50,15 @@ public class UserService {
         return new LoginResponse(userLogin.username(), auth);
     }
 
-    public static boolean InvalidAuth(DataAccess dataAccess, String auth) throws DataAccessException {
+    public static boolean invalidAuth(DataAccess dataAccess, String auth) throws DataAccessException {
         return !dataAccess.validAuth(auth);
     }
 
-    public static String UserFromAuth(DataAccess dataAccess, String auth) throws  DataAccessException {
+    public static String userFromAuth(DataAccess dataAccess, String auth) throws  DataAccessException {
         return dataAccess.userFromAuth(auth);
     }
 
-    public static void RemoveAuth(DataAccess dataAccess, String auth) throws  DataAccessException {
+    public static void removeAuth(DataAccess dataAccess, String auth) throws  DataAccessException {
         dataAccess.removeAuth(auth);
     }
 }

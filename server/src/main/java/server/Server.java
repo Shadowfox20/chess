@@ -37,7 +37,7 @@ public class Server {
 
     private void clearDB(Context context) {
         try {
-            DataService.Clear(dataAccess);
+            DataService.clear(dataAccess);
         } catch (DataAccessException e) {
             context.status(500);
             context.result(serializer.toJson(Map.of("message", "Error: " + e.getMessage())));
@@ -86,7 +86,7 @@ public class Server {
             if (invalidAuthToken(context)) {
                 return;
             }
-            UserService.RemoveAuth(dataAccess, context.header("authorization"));
+            UserService.removeAuth(dataAccess, context.header("authorization"));
             context.status(200);
         } catch (DataAccessException e) {
             context.status(500);
@@ -133,7 +133,7 @@ public class Server {
                 return;
             }
             GameService.JoinGameRequest userReq = new GameService.JoinGameRequest(request.gameID(), request.playerColor(),
-                    UserService.UserFromAuth(dataAccess, context.header("authorization")));
+                    UserService.userFromAuth(dataAccess, context.header("authorization")));
             GameService.joinGame(dataAccess, userReq);
             context.status(200);
         } catch (DataAccessException e) {
@@ -150,7 +150,7 @@ public class Server {
 
     private boolean invalidAuthToken(Context ctx) throws DataAccessException {
         String authToken = ctx.header("authorization");
-        if (UserService.InvalidAuth(dataAccess, authToken)) {
+        if (UserService.invalidAuth(dataAccess, authToken)) {
             ctx.contentType("application/json");
             ctx.status(401);
             ctx.result(serializer.toJson(Map.of("message", "Error: unauthorized")));
