@@ -198,5 +198,15 @@ public class DBDataAccess implements DataAccess{
 
     @Override
     public void clear() throws DataAccessException {
+        try (var connection = DatabaseManager.getConnection()) {
+            Statement statement = connection.createStatement();
+            String query = """
+            DROP DATABASE DATABASE();
+            """;
+            statement.executeQuery(query);
+        } catch (SQLException e) {
+            throw new DataAccessException(e.getMessage());
+        }
+        DatabaseManager.createDatabase();
     }
 }
