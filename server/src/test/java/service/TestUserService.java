@@ -26,8 +26,8 @@ public class TestUserService {
                         "test2", UserService.register(dataAccess,
                                 new UserService.RegisterRequest(
                                         "test2", "hashedPassword", "test2@email.com")).username()));
-        Assertions.assertNotNull(dataAccess.userExists("test"));
-        Assertions.assertNotNull(dataAccess.userExists("test2"));
+        Assertions.assertTrue(dataAccess.userExists("test"));
+        Assertions.assertTrue(dataAccess.userExists("test2"));
     }
 
     @Test
@@ -45,7 +45,7 @@ public class TestUserService {
                 UserService.register(dataAccess,
                         new UserService.RegisterRequest(
                                 "test", "hashedPassword", "test@email.com")));
-        Assertions.assertNotNull(dataAccess.userExists("test"));
+        Assertions.assertTrue(dataAccess.userExists("test"));
 
         FailedDataAccess failedDataAccess = new FailedDataAccess();
         Assertions.assertThrowsExactly(DataAccessException.class, () ->
