@@ -4,18 +4,19 @@ import model.GameData;
 import model.UserData;
 import org.mindrot.jbcrypt.BCrypt;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 public class MemoryDataAccess implements DataAccess {
     private record User(String username, String password, String email) {}
     private HashMap<String, User> userTable = new HashMap<>();
     private List<GameData> activeGameList = new ArrayList<>(0);
+    private HashMap<String, String> validTokens = new HashMap<>();
 
     @Override
     public UserData createUser(String username, String password, String email) {
         userTable.put(username, new User(username, BCrypt.hashpw(password, BCrypt.gensalt()), email));
+        String auth = UUID.randomUUID().toString();
+        validTokens.put(auth, username);
         return getUser(username);
     }
 
@@ -25,7 +26,7 @@ public class MemoryDataAccess implements DataAccess {
         if (res == null) {
             return null;
         }
-        return new UserData(res.username());
+        return new UserData(res.username(), validTokens.get(username));
     }
 
     @Override
@@ -34,7 +35,7 @@ public class MemoryDataAccess implements DataAccess {
         if (res == null) {
             return null;
         }
-        return new UserLogin(res.username(), res.password());
+        return new UserLogin(res.username(), res.password(), validTokens.get(username));
     }
 
     @Override
@@ -66,8 +67,24 @@ public class MemoryDataAccess implements DataAccess {
     }
 
     @Override
-    public void clear() throws DataAccessException {
+    public void clear() {
         userTable = new HashMap<>();
         activeGameList = new ArrayList<>(0);
+        validTokens = new HashMap<>();
+    }
+
+    @Override
+    public boolean validAuth(String auth) {
+        return validTokens.containsKey(auth);
+    }
+
+    @Override
+    public String userFromAuth(String auth) {
+        return validTokens.get(auth);
+    }
+
+    @Override
+    public void removeAuth(String auth) {
+        validTokens.remove(auth);
     }
 }

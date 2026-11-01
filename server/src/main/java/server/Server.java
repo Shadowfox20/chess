@@ -4,19 +4,15 @@ import com.google.gson.Gson;
 import dataaccess.DBDataAccess;
 import dataaccess.DataAccessException;
 import dataaccess.DataAccess;
-import dataaccess.MemoryDataAccess;
 import io.javalin.*;
 import io.javalin.http.Context;
 import service.*;
 
-import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 public class Server {
 
     private final Javalin javalin;
-    final private HashMap<String, String> validTokens = new HashMap<>();
     private final DataAccess dataAccess;
     private final Gson serializer = new Gson();
 
@@ -46,16 +42,15 @@ public class Server {
             context.status(500);
             context.result(serializer.toJson(Map.of("message", "Error: " + e.getMessage())));
         }
+
     }
 
     private void registerHandler(Context context) {
         UserService.RegisterRequest request = serializer.fromJson(context.body(), UserService.RegisterRequest.class);
         try {
             UserService.RegisterResponse response = UserService.register(dataAccess, request);
-            String auth = UUID.randomUUID().toString();
-            validTokens.put(auth, request.username());
             context.status(200);
-            context.result(serializer.toJson(Map.of("authToken", auth,"username", response.username())));
+            context.result(serializer.toJson(Map.of("authToken", response.auth(),"username", response.username())));
         } catch (DataAccessException e) {
             context.status(500);
             context.result(serializer.toJson(Map.of("message", "Error: " + e.getMessage())));
@@ -72,10 +67,8 @@ public class Server {
         UserService.LoginRequest request = serializer.fromJson(context.body(), UserService.LoginRequest.class);
         try {
             UserService.LoginResponse response = UserService.login(dataAccess, request);
-            String auth = UUID.randomUUID().toString();
-            validTokens.put(auth, request.username());
             context.status(200);
-            context.result(serializer.toJson(Map.of("authToken", auth,"username", response.username())));
+            context.result(serializer.toJson(Map.of("authToken", response.auth(),"username", response.username())));
         } catch (DataAccessException e) {
             context.status(500);
             context.result(serializer.toJson(Map.of("message", "Error: " + e.getMessage())));
@@ -89,21 +82,25 @@ public class Server {
     }
 
     private void logoutHandler(Context context) {
-        if (invalidAuthToken(context)) {
-            return;
+        try {
+            if (invalidAuthToken(context)) {
+                return;
+            }
+            UserService.RemoveAuth(dataAccess, context.header("authorization"));
+            context.status(200);
+        } catch (DataAccessException e) {
+            context.status(500);
+            context.result(serializer.toJson(Map.of("message", "Error: " + e.getMessage())));
+            throw new RuntimeException(e);
         }
-        String authToken = context.header("authorization");
-        validTokens.remove(authToken);
-        context.status(200);
     }
 
     private void listGamesHandler(Context context) {
-        if (invalidAuthToken(context)) {
-            return;
-        }
         try {
+            if (invalidAuthToken(context)) {
+                return;
+            }
             GameService.GameListResponse games = GameService.gameList(dataAccess);
-
             context.status(200);
             context.result(serializer.toJson(games));
         } catch (DataAccessException e) {
@@ -113,13 +110,12 @@ public class Server {
     }
 
     private void createGameHandler(Context context) {
-        if (invalidAuthToken(context)) {
-            return;
-        }
         GameService.CreateGameRequest request = serializer.fromJson(context.body(), GameService.CreateGameRequest.class);
         try {
+            if (invalidAuthToken(context)) {
+                return;
+            }
             GameService.CreateGameResponse game = GameService.createGame(dataAccess, request);
-
             context.status(200);
             context.result(serializer.toJson(game));
         } catch (DataAccessException e) {
@@ -132,12 +128,13 @@ public class Server {
     }
 
     private void joinGameHandler(Context context) {
-        if (invalidAuthToken(context)) {
-            return;
-        }
         GameService.JoinGameRequest request = serializer.fromJson(context.body(), GameService.JoinGameRequest.class);
         try {
-            GameService.JoinGameRequest userReq = new GameService.JoinGameRequest(request.gameID(), request.playerColor(), userFromAuth(context));
+            if (invalidAuthToken(context)) {
+                return;
+            }
+            GameService.JoinGameRequest userReq = new GameService.JoinGameRequest(request.gameID(), request.playerColor(),
+                    UserService.UserFromAuth(dataAccess, context.header("authorization")));
             GameService.joinGame(dataAccess, userReq);
             context.status(200);
         } catch (DataAccessException e) {
@@ -152,19 +149,15 @@ public class Server {
         }
     }
 
-    private boolean invalidAuthToken(Context ctx) {
+    private boolean invalidAuthToken(Context ctx) throws DataAccessException {
         String authToken = ctx.header("authorization");
-        if (!validTokens.containsKey(authToken)) {
+        if (UserService.InvalidAuth(dataAccess, authToken)) {
             ctx.contentType("application/json");
             ctx.status(401);
             ctx.result(serializer.toJson(Map.of("message", "Error: unauthorized")));
             return true;
         }
         return false;
-    }
-
-    private String userFromAuth(Context ctx) {
-        return validTokens.get(ctx.header("authorization"));
     }
 
     public int run(int desiredPort) {

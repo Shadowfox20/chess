@@ -14,4 +14,7 @@ public interface DataAccess {
     GameData getGame(int gameID) throws DataAccessException;
     void joinGame(int gameID, boolean whiteTeam, String username) throws DataAccessException;
     void clear() throws DataAccessException;
+    boolean validAuth(String auth) throws DataAccessException;
+    String userFromAuth(String auth) throws DataAccessException;
+    void removeAuth(String auth) throws DataAccessException;
 }
