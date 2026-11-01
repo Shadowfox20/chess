@@ -276,7 +276,7 @@ public class DBDataAccess implements DataAccess{
     public void clear() throws DataAccessException {
         try (var connection = DatabaseManager.getConnection()) {
             Statement statement = connection.createStatement();
-            String query = "DROP TABLE IF EXISTS users, authTokens, active_games;";
+            String query = "DROP TABLE IF EXISTS users, auth_tokens, active_games;";
             statement.execute(query);
         } catch (SQLException e) {
             throw new DataAccessException(e.getMessage());
