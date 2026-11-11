@@ -24,8 +24,25 @@ public class ClientMain {
             String raw = scanner.nextLine();
             request request = parseRequest(raw);
 
-            if (request.command().toLowerCase(Locale.ROOT).equals("quit")) {
-                return;
+            switch (request.command().toLowerCase(Locale.ROOT)) {
+                case "help" -> {
+                    System.out.println("""
+                         //========================================+=============================\\\\
+                        || command [arguments]                     | description                  ||
+                        ||=========================================|==============================||
+                        || register [username] [password] [email]  | create an account            ||
+                        |+-----------------------------------------+------------------------------+|
+                        || login [username] [password]             | login to an existing account ||
+                        |+-----------------------------------------+------------------------------+|
+                        || quit                                    | exit program                 ||
+                        |+-----------------------------------------+------------------------------+|
+                        || help                                    | display commands             ||
+                         \\\\========================================+=============================//
+                        """);
+                }
+                case "quit" -> {
+                    return;
+                }
             }
         }
     }
