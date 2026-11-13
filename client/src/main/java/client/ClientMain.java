@@ -27,9 +27,8 @@ public class ClientMain {
     private static final HttpClient httpClient = HttpClient.newHttpClient();
 
     public static void main(String[] args) {
-        var piece = new ChessPiece(ChessGame.TeamColor.WHITE, ChessPiece.PieceType.PAWN);
-        System.out.println("♕ 240 Chess Client: " + piece);
         Scanner scanner = new Scanner(System.in);
+        System.out.println("♕ WELCOME to 240 Chess Client!");
         loggedOut(scanner);
         scanner.close();
     }
@@ -69,8 +68,8 @@ public class ClientMain {
                         if (Objects.equals(response.authToken(), "failed")) {
                             continue;
                         }
-                        boolean quit = loggedIn(scanner, response.username(), response.authToken());
-                        if (quit) {
+                        System.out.println("Welcome!");
+                        if (loggedIn(scanner, response.username(), response.authToken())) {
                             System.out.println("Until next time!");
                             return;
                         }
@@ -99,9 +98,9 @@ public class ClientMain {
                     }
                 }
             } catch (InsufficientArgumentsError e) {
-                System.out.println("Insufficient arguments: " + e);
+                System.out.println("Insufficient arguments: " + e.getMessage());
             } catch (ConnectException e) {
-                System.out.println("Unable to connect: " + e);
+                System.out.println("Unable to connect: " + e.getMessage());
             }
         }
     }
@@ -119,13 +118,23 @@ public class ClientMain {
                             throw new InsufficientArgumentsError("create requires 1 argument - game name");
                         }
                         String name = request.body()[0];
-                        create(authToken, name);
+                        createResponse response = create(authToken, name);
+                        if (response != null) {
+                            System.out.println("Game created with id " + response.gameID());
+                        }
                     }
                     case "join" -> {
-
+                        if (request.body().length < 2) {
+                            throw new InsufficientArgumentsError("create requires 1 argument - game name");
+                        }
+                        String gameID = request.body()[0];
+                        String color = request.body()[1];
+                        if (join(authToken, gameID, color)) {
+                            System.out.println("Successfully joined! Opening game window...");
+                        }
                     }
                     case "observe" -> {
-
+                        System.out.println("This command isn't ready yet...");
                     }
                     case "list" -> {
                         gameList list = list(authToken);
@@ -144,8 +153,7 @@ public class ClientMain {
                     case "quit" -> {
                         return true;
                     }
-                    case "help" -> {
-                        System.out.println("""
+                    case "help" -> System.out.println("""
                                  //========================================+===============================================\\\\
                                 || command [arguments]                     | description                                    ||
                                 ||=========================================|================================================||
@@ -164,19 +172,17 @@ public class ClientMain {
                                 || help                                    | display commands                               ||
                                  \\\\========================================+===============================================//
                                 """);
-                    }
-                    default -> {
-                        System.out.println("Command not recognized. Enter \"help\" to see commands.");
-                    }
+                    default -> System.out.println("Command not recognized. Enter \"help\" to see commands.");
                 }
             } catch (InsufficientArgumentsError e) {
-                System.out.println("Insufficient arguments: " + e);
+                System.out.println("Insufficient arguments: " + e.getMessage());
             } catch (ConnectException e) {
-                System.out.println("Unable to connect: " + e);
+                System.out.println("Unable to connect: " + e.getMessage());
             }
         }
     }
 
+    private record errorResponse(String message) {}
     private record loginResponse(String authToken, String username) {}
 
     private static loginResponse register(String username, String password, String email) throws ConnectException {
@@ -184,10 +190,13 @@ public class ClientMain {
         try {
             HttpResponse<String> httpResponse = sendRequest("/user", "POST", body, null);
 
-            if (httpResponse.statusCode() >= 200 && httpResponse.statusCode() < 300) {
+            if (httpResponse.statusCode() == 500) {
+                System.out.println("Sorry, we hit an internal server error...");
+            } else if (httpResponse.statusCode() >= 200 && httpResponse.statusCode() < 300) {
                 return new Gson().fromJson(httpResponse.body(), loginResponse.class);
             } else {
-                System.out.println(httpResponse.body());
+                errorResponse err = new Gson().fromJson(httpResponse.body(), errorResponse.class);
+                System.out.println(err.message());
             }
             return new loginResponse("failed", "");
         } catch (URISyntaxException | IOException | InterruptedException e) {
@@ -200,10 +209,13 @@ public class ClientMain {
         try {
             HttpResponse<String> httpResponse = sendRequest("/session", "POST", body, null);
 
-            if (httpResponse.statusCode() >= 200 && httpResponse.statusCode() < 300) {
+            if (httpResponse.statusCode() == 500) {
+                System.out.println("Sorry, we hit an internal server error...");
+            } else if (httpResponse.statusCode() >= 200 && httpResponse.statusCode() < 300) {
                 return new Gson().fromJson(httpResponse.body(), loginResponse.class);
             } else {
-                System.out.println(httpResponse.body());
+                errorResponse err = new Gson().fromJson(httpResponse.body(), errorResponse.class);
+                System.out.println(err.message());
             }
             return new loginResponse("failed", "");
         } catch (URISyntaxException | IOException | InterruptedException e) {
@@ -215,8 +227,11 @@ public class ClientMain {
         try {
             HttpResponse<String> httpResponse = sendRequest("/session", "DELETE", null, authToken);
 
-            if (httpResponse.statusCode() < 200 || httpResponse.statusCode() >= 300) {
-                System.out.println(httpResponse.body());
+            if (httpResponse.statusCode() == 500) {
+                System.out.println("Sorry, we hit an internal server error...");
+            } else if (httpResponse.statusCode() < 200 || httpResponse.statusCode() >= 300) {
+                errorResponse err = new Gson().fromJson(httpResponse.body(), errorResponse.class);
+                System.out.println(err.message());
             }
         } catch (URISyntaxException | IOException | InterruptedException e) {
             throw new ConnectException("There was an issue processing your request.");
@@ -230,10 +245,13 @@ public class ClientMain {
         try {
             HttpResponse<String> httpResponse = sendRequest("/game", "GET", null, authToken);
 
-            if (httpResponse.statusCode() >= 200 && httpResponse.statusCode() < 300) {
+            if (httpResponse.statusCode() == 500) {
+                System.out.println("Sorry, we hit an internal server error...");
+            } else if (httpResponse.statusCode() >= 200 && httpResponse.statusCode() < 300) {
                 return new Gson().fromJson(httpResponse.body(), gameList.class);
             } else {
-                System.out.println(httpResponse.body());
+                errorResponse err = new Gson().fromJson(httpResponse.body(), errorResponse.class);
+                System.out.println(err.message());
             }
             return null;
         } catch (URISyntaxException | IOException | InterruptedException e) {
@@ -241,14 +259,40 @@ public class ClientMain {
         }
     }
 
-    private static void create(String authToken, String name) throws ConnectException {
+    private record createResponse(int gameID) {}
+
+    private static createResponse create(String authToken, String name) throws ConnectException {
         String body = new Gson().toJson(Map.of("gameName", name));
         try {
             HttpResponse<String> httpResponse = sendRequest("/game", "POST", body, authToken);
 
-            if (httpResponse.statusCode() < 200 || httpResponse.statusCode() >= 300) {
-                System.out.println(httpResponse.body());
+            if (httpResponse.statusCode() == 500) {
+                System.out.println("Sorry, we hit an internal server error...");
+            } else if (httpResponse.statusCode() >= 200 || httpResponse.statusCode() < 300) {
+                return new Gson().fromJson(httpResponse.body(), createResponse.class);
+            } else {
+                errorResponse err = new Gson().fromJson(httpResponse.body(), errorResponse.class);
+                System.out.println(err.message());
             }
+            return null;
+        } catch (URISyntaxException | IOException | InterruptedException e) {
+            throw new ConnectException("There was an issue processing your request.");
+        }
+    }
+
+    private static boolean join(String authToken, String gameID, String color) throws ConnectException {
+        String body = new Gson().toJson(Map.of("gameID", gameID, "playerColor", color));
+        try {
+            HttpResponse<String> httpResponse = sendRequest("/game", "PUT", body, authToken);
+
+            if (httpResponse.statusCode() == 500) {
+                System.out.println("Sorry, we hit an internal server error...");
+            } else if (httpResponse.statusCode() < 200 || httpResponse.statusCode() >= 300) {
+                errorResponse err = new Gson().fromJson(httpResponse.body(), errorResponse.class);
+                System.out.println(err.message());
+                return false;
+            }
+            return true;
         } catch (URISyntaxException | IOException | InterruptedException e) {
             throw new ConnectException("There was an issue processing your request.");
         }

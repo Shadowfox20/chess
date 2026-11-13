@@ -1,6 +1,7 @@
 package server;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 import dataaccess.sql.DBDataAccess;
 import dataaccess.DataAccessException;
 import dataaccess.DataAccess;
@@ -74,7 +75,7 @@ public class Server {
             context.result(serializer.toJson(Map.of("message", "Error: " + e.getMessage())));
         } catch (IncorrectLoginException e) {
             context.status(401);
-            context.result(serializer.toJson(Map.of("message", "Error: unauthorized")));
+            context.result(serializer.toJson(Map.of("message", "Error: incorrect username/password")));
         } catch (BadRequestException e) {
             context.status(400);
             context.result(serializer.toJson(Map.of("message", "Error: bad request: " + e.getMessage())));
@@ -127,7 +128,14 @@ public class Server {
     }
 
     private void joinGameHandler(Context context) {
-        GameService.JoinGameRequest request = serializer.fromJson(context.body(), GameService.JoinGameRequest.class);
+        GameService.JoinGameRequest request;
+        try {
+             request = serializer.fromJson(context.body(), GameService.JoinGameRequest.class);
+        } catch (JsonSyntaxException e) {
+            context.status(400);
+            context.result(serializer.toJson(Map.of("message", "Error: bad request: ID must be a number")));
+            return;
+        }
         try {
             if (invalidAuthToken(context)) {
                 return;
