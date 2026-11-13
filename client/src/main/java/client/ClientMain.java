@@ -14,6 +14,7 @@ import java.util.*;
 
 import chess.ChessPiece;
 import chess.ChessGame;
+import ui.ChessDisplay;
 
 public class ClientMain {
     private static class InsufficientArgumentsError extends Exception {
@@ -131,7 +132,9 @@ public class ClientMain {
                         String color = request.body()[1];
                         if (join(authToken, gameID, color)) {
                             System.out.println("Successfully joined! Opening game window...");
+                            new ChessDisplay(new ChessGame()).display(color);
                         }
+                        inGame(scanner, username);
                     }
                     case "observe" -> {
                         System.out.println("This command isn't ready yet...");
@@ -178,6 +181,34 @@ public class ClientMain {
                 System.out.println("Insufficient arguments: " + e.getMessage());
             } catch (ConnectException e) {
                 System.out.println("Unable to connect: " + e.getMessage());
+            }
+        }
+    }
+
+    private static void inGame(Scanner scanner, String username) {
+        while (true) {
+            System.out.print("[" + username + "] >> ");
+            String raw = scanner.nextLine();
+
+            try {
+                request request = parseRequest(raw);
+                switch (request.command().toLowerCase(Locale.ROOT)) {
+                    case "exit" -> {
+                        return;
+                    }
+                    case "help" -> System.out.println("""
+                                 //========================================+===============================================\\\\
+                                || command [arguments]                     | description                                    ||
+                                ||=========================================|================================================||
+                                || exit                                    | exit game                                      ||
+                                |+-----------------------------------------+------------------------------------------------+|
+                                || help                                    | display commands                               ||
+                                 \\\\========================================+===============================================//
+                                """);
+                    default -> System.out.println("Command not recognized. Enter \"help\" to see commands.");
+                }
+            } catch (InsufficientArgumentsError e) {
+                System.out.println("Insufficient arguments: " + e.getMessage());
             }
         }
     }
