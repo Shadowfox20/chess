@@ -25,6 +25,15 @@ public class ClientMain {
             request request = parseRequest(raw);
 
             switch (request.command().toLowerCase(Locale.ROOT)) {
+                case "register" -> {
+
+                }
+                case "login" -> {
+                    boolean quit = loggedIn(scanner, username, authToken);
+                    if (quit) {
+                        return;
+                    }
+                }
                 case "help" -> {
                     System.out.println("""
                          //========================================+=============================\\\\
@@ -41,7 +50,65 @@ public class ClientMain {
                         """);
                 }
                 case "quit" -> {
+                    System.out.println("Until next time!");
                     return;
+                }
+                default -> {
+                    System.out.println("Command not recognized. Type 'help' to see available commands.");
+                }
+            }
+        }
+    }
+
+    private static boolean loggedIn(Scanner scanner, String username, String authToken) {
+        while (true) {
+            System.out.print("[Logged Out] >> ");
+            String raw = scanner.nextLine();
+            request request = parseRequest(raw);
+
+            switch (request.command().toLowerCase(Locale.ROOT)) {
+                case "create" -> {
+
+                }
+                case "join" -> {
+
+                }
+                case "observe" -> {
+
+                }
+                case "list" -> {
+
+                }
+                case "logout" -> {
+                    return false;
+                }
+                case "quit" -> {
+                    System.out.println("Until next time!");
+                    return true;
+                }
+                case "help" -> {
+                    System.out.println("""
+                         //========================================+===============================================\\\\
+                        || command [arguments]                     | description                                    ||
+                        ||=========================================|================================================||
+                        || create [name]                           | start a new game with chosen name              ||
+                        |+-----------------------------------------+------------------------------------------------+|
+                        || join [ID] [WHITE | BLACK]               | join a game using a color; use list to see ids ||
+                        |+-----------------------------------------+------------------------------------------------+|
+                        || observe [ID]                            | watch an active game                           ||
+                        |+-----------------------------------------+------------------------------------------------+|
+                        || logout                                  | end session                                    ||
+                        |+-----------------------------------------+------------------------------------------------+|
+                        || list                                    | list available games and ids                   ||
+                        |+-----------------------------------------+------------------------------------------------+|
+                        || quit                                    | exit program                                   ||
+                        |+-----------------------------------------+------------------------------------------------+|
+                        || help                                    | display commands                               ||
+                         \\\\========================================+===============================================//
+                        """);
+                }
+                default -> {
+                    System.out.println("Command not recognized. Type 'help' to see available commands.");
                 }
             }
         }
