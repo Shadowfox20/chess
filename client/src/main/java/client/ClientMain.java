@@ -126,7 +126,14 @@ public class ClientMain {
 
                     }
                     case "list" -> {
-
+                        gameList list = list(authToken);
+                        if (list == null) {
+                            continue;
+                        }
+                        for (gameInfo game : list.games()) {
+                            System.out.println(game.gameID() + " " + game.gameName() + ": WHITE [" +
+                                    game.whiteUsername() + "], BLACK [" + game.blackUsername() + "]");
+                        }
                     }
                     case "logout" -> {
                         logout(authToken);
@@ -173,7 +180,7 @@ public class ClientMain {
     private static loginResponse register(String username, String password, String email) throws ConnectException {
         String body = new Gson().toJson(Map.of("username", username, "password", password, "email", email));
         try {
-            HttpResponse<String> httpResponse = sendRequest("/user", "POST", body);
+            HttpResponse<String> httpResponse = sendRequest("/user", "POST", body, null);
 
             if (httpResponse.statusCode() >= 200 && httpResponse.statusCode() < 300) {
                 return new Gson().fromJson(httpResponse.body(), loginResponse.class);
@@ -189,7 +196,7 @@ public class ClientMain {
     private static loginResponse login(String username, String password) throws ConnectException {
         String body = new Gson().toJson(Map.of("username", username, "password", password));
         try {
-            HttpResponse<String> httpResponse = sendRequest("/session", "POST", body);
+            HttpResponse<String> httpResponse = sendRequest("/session", "POST", body, null);
 
             if (httpResponse.statusCode() >= 200 && httpResponse.statusCode() < 300) {
                 return new Gson().fromJson(httpResponse.body(), loginResponse.class);
@@ -203,9 +210,8 @@ public class ClientMain {
     }
 
     private static void logout(String authToken) throws ConnectException {
-        String body = new Gson().toJson(Map.of("authToken", authToken));
         try {
-            HttpResponse<String> httpResponse = sendRequest("/session", "DELETE", body);
+            HttpResponse<String> httpResponse = sendRequest("/session", "DELETE", null, authToken);
 
             if (httpResponse.statusCode() < 200 || httpResponse.statusCode() >= 300) {
                 System.out.println(httpResponse.body());
@@ -215,14 +221,47 @@ public class ClientMain {
         }
     }
 
-    private static HttpResponse<String> sendRequest(String endpoint, String method, String body)
+    private record gameList(ArrayList<gameInfo> games) {}
+    private record gameInfo(String gameID, String whiteUsername, String blackUsername, String gameName) {}
+
+    private static gameList list(String authToken) throws ConnectException {
+        try {
+            HttpResponse<String> httpResponse = sendRequest("/game", "GET", null, authToken);
+
+            if (httpResponse.statusCode() >= 200 && httpResponse.statusCode() < 300) {
+                return new Gson().fromJson(httpResponse.body(), gameList.class);
+            } else {
+                System.out.println(httpResponse.body());
+            }
+            return null;
+        } catch (URISyntaxException | IOException | InterruptedException e) {
+            throw new ConnectException("There was an issue processing your request.");
+        }
+    }
+
+    private static HttpResponse<String> sendRequest(String endpoint, String method, String body, String authToken)
             throws IOException, InterruptedException, URISyntaxException {
-        HttpRequest request = HttpRequest.newBuilder()
+        HttpRequest request = addAuth(HttpRequest.newBuilder()
                 .uri(new URI("http://localhost:8080" + endpoint))
                 .timeout(Duration.ofMillis(5000))
-                .method(method, HttpRequest.BodyPublishers.ofString(body))
+                .method(method, requestBodyPublisher(body)), authToken)
                 .build();
         return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+    }
+
+    private static HttpRequest.BodyPublisher requestBodyPublisher(String body) {
+        if (body != null) {
+            return HttpRequest.BodyPublishers.ofString(body);
+        } else {
+            return HttpRequest.BodyPublishers.noBody();
+        }
+    }
+
+    private static HttpRequest.Builder addAuth(HttpRequest.Builder builder, String authToken) {
+        if (authToken == null) {
+            return builder;
+        }
+        return builder.header("authorization", authToken);
     }
 
     private static request parseRequest(String rawString) throws InsufficientArgumentsError {
