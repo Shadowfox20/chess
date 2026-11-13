@@ -1,14 +1,32 @@
 package client;
 
-import chess.*;
+import com.google.gson.Gson;
 import service.BadRequestException;
 
+import java.io.IOException;
+import java.net.ConnectException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Locale;
-import java.util.Scanner;
+import java.util.Map;import java.util.Scanner;
+import chess.ChessPiece;
+import chess.ChessGame;
 
 public class ClientMain {
-    private record request(String command, String[] body) {};
+    private static class InsufficientArgumentsError extends Exception {
+        public InsufficientArgumentsError(String message) {
+            super(message);
+        }
+    }
+
+    private record request(String command, String[] body) {}
+
+    private static final HttpClient httpClient = HttpClient.newHttpClient();
 
     public static void main(String[] args) {
         var piece = new ChessPiece(ChessGame.TeamColor.WHITE, ChessPiece.PieceType.PAWN);
@@ -24,93 +42,146 @@ public class ClientMain {
             String raw = scanner.nextLine();
             request request = parseRequest(raw);
 
-            switch (request.command().toLowerCase(Locale.ROOT)) {
-                case "register" -> {
-
-                }
-                case "login" -> {
-                    boolean quit = loggedIn(scanner, username, authToken);
-                    if (quit) {
+            try {
+                switch (request.command().toLowerCase(Locale.ROOT)) {
+                    case "register" -> {
+                        if (request.body().length < 3) {
+                            throw new InsufficientArgumentsError("register requires 3 arguments - username, password and email");
+                        }
+                        String username = request.body()[0];
+                        String password = request.body()[1];
+                        String email = request.body()[2];
+                        registerResponse response = register(username, password, email);
+                        boolean quit = loggedIn(scanner, response.username(), response.authToken());
+                        if (quit) {
+                            System.out.println("Until next time!");
+                            return;
+                        }
+                    }
+                    case "login" -> {
+                        if (request.body().length < 2) {
+                            throw new InsufficientArgumentsError("login requires 2 arguments - username, password");
+                        }
+                        String username = request.body()[0];
+                        String password = request.body()[1];
+                        boolean quit = loggedIn(scanner, username, password);
+                        if (quit) {
+                            System.out.println("Until next time!");
+                            return;
+                        }
+                    }
+                    case "help" -> {
+                        System.out.println("""
+                             //========================================+=============================\\\\
+                            || command [arguments]                     | description                  ||
+                            ||=========================================|==============================||
+                            || register [username] [password] [email]  | create an account            ||
+                            |+-----------------------------------------+------------------------------+|
+                            || login [username] [password]             | login to an existing account ||
+                            |+-----------------------------------------+------------------------------+|
+                            || quit                                    | exit program                 ||
+                            |+-----------------------------------------+------------------------------+|
+                            || help                                    | display commands             ||
+                             \\\\========================================+=============================//
+                            """);
+                    }
+                    case "quit" -> {
+                        System.out.println("Until next time!");
                         return;
                     }
+                    default -> {
+                        System.out.println("Command not recognized. Type 'help' to see available commands.");
+                    }
                 }
-                case "help" -> {
-                    System.out.println("""
-                         //========================================+=============================\\\\
-                        || command [arguments]                     | description                  ||
-                        ||=========================================|==============================||
-                        || register [username] [password] [email]  | create an account            ||
-                        |+-----------------------------------------+------------------------------+|
-                        || login [username] [password]             | login to an existing account ||
-                        |+-----------------------------------------+------------------------------+|
-                        || quit                                    | exit program                 ||
-                        |+-----------------------------------------+------------------------------+|
-                        || help                                    | display commands             ||
-                         \\\\========================================+=============================//
-                        """);
-                }
-                case "quit" -> {
-                    System.out.println("Until next time!");
-                    return;
-                }
-                default -> {
-                    System.out.println("Command not recognized. Type 'help' to see available commands.");
-                }
+            } catch (InsufficientArgumentsError e) {
+                System.out.println("Insufficient arguments: " + e);
+            } catch (ConnectException e) {
+                System.out.println("Unable to connect: " + e);
             }
         }
     }
 
     private static boolean loggedIn(Scanner scanner, String username, String authToken) {
         while (true) {
-            System.out.print("[Logged Out] >> ");
+            System.out.print("[" + username + "] >> ");
             String raw = scanner.nextLine();
             request request = parseRequest(raw);
 
-            switch (request.command().toLowerCase(Locale.ROOT)) {
-                case "create" -> {
+            try {
+                switch (request.command().toLowerCase(Locale.ROOT)) {
+                    case "create" -> {
+                        if (request.body().length == 0) {
+                            throw new InsufficientArgumentsError("create requires 1 argument - game name");
+                        }
+                    }
+                    case "join" -> {
 
-                }
-                case "join" -> {
+                    }
+                    case "observe" -> {
 
-                }
-                case "observe" -> {
+                    }
+                    case "list" -> {
 
+                    }
+                    case "logout" -> {
+                        return false;
+                    }
+                    case "quit" -> {
+                        System.out.println("Until next time!");
+                        return true;
+                    }
+                    case "help" -> {
+                        System.out.println("""
+                                 //========================================+===============================================\\\\
+                                || command [arguments]                     | description                                    ||
+                                ||=========================================|================================================||
+                                || create [name]                           | start a new game with chosen name              ||
+                                |+-----------------------------------------+------------------------------------------------+|
+                                || join [ID] [WHITE | BLACK]               | join a game using a color; use list to see ids ||
+                                |+-----------------------------------------+------------------------------------------------+|
+                                || observe [ID]                            | watch an active game                           ||
+                                |+-----------------------------------------+------------------------------------------------+|
+                                || logout                                  | end session                                    ||
+                                |+-----------------------------------------+------------------------------------------------+|
+                                || list                                    | list available games and ids                   ||
+                                |+-----------------------------------------+------------------------------------------------+|
+                                || quit                                    | exit program                                   ||
+                                |+-----------------------------------------+------------------------------------------------+|
+                                || help                                    | display commands                               ||
+                                 \\\\========================================+===============================================//
+                                """);
+                    }
+                    default -> {
+                        System.out.println("Command not recognized. Type 'help' to see available commands.");
+                    }
                 }
-                case "list" -> {
-
-                }
-                case "logout" -> {
-                    return false;
-                }
-                case "quit" -> {
-                    System.out.println("Until next time!");
-                    return true;
-                }
-                case "help" -> {
-                    System.out.println("""
-                         //========================================+===============================================\\\\
-                        || command [arguments]                     | description                                    ||
-                        ||=========================================|================================================||
-                        || create [name]                           | start a new game with chosen name              ||
-                        |+-----------------------------------------+------------------------------------------------+|
-                        || join [ID] [WHITE | BLACK]               | join a game using a color; use list to see ids ||
-                        |+-----------------------------------------+------------------------------------------------+|
-                        || observe [ID]                            | watch an active game                           ||
-                        |+-----------------------------------------+------------------------------------------------+|
-                        || logout                                  | end session                                    ||
-                        |+-----------------------------------------+------------------------------------------------+|
-                        || list                                    | list available games and ids                   ||
-                        |+-----------------------------------------+------------------------------------------------+|
-                        || quit                                    | exit program                                   ||
-                        |+-----------------------------------------+------------------------------------------------+|
-                        || help                                    | display commands                               ||
-                         \\\\========================================+===============================================//
-                        """);
-                }
-                default -> {
-                    System.out.println("Command not recognized. Type 'help' to see available commands.");
-                }
+            } catch (InsufficientArgumentsError e) {
+                System.out.println("Insufficient arguments: " + e);
             }
+        }
+    }
+
+    private record registerResponse(String authToken, String username) {}
+
+    private static registerResponse register(String username, String password, String email) throws ConnectException {
+        String body = new Gson().toJson(Map.of("username", username, "password", password, "email", email));
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(new URI("http://localhost:8080/user"))
+                    .timeout(Duration.ofMillis(5000))
+                    .method("POST", HttpRequest.BodyPublishers.ofString(body))
+                    .build();
+
+            HttpResponse<String> httpResponse = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (httpResponse.statusCode() >= 200 && httpResponse.statusCode() < 300) {
+                return new Gson().fromJson(httpResponse.body(), registerResponse.class);
+            } else {
+                System.out.println(httpResponse.body());
+            }
+            return new registerResponse("failed", "");
+        } catch (URISyntaxException | IOException | InterruptedException e) {
+            throw new ConnectException("There was an issue processing your request.");
         }
     }
 

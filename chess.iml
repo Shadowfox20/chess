@@ -8,6 +8,7 @@
       <sourceFolder url="file://$MODULE_DIR$/server/src/main/resources" type="java-resource" />
       <sourceFolder url="file://$MODULE_DIR$/shared/src/main/java" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/shared/src/test/java" isTestSource="true" />
+      <excludeFolder url="file://$MODULE_DIR$/client/src/main/java/ui/GameDisplay.java" />
       <excludeFolder url="file://$MODULE_DIR$/starter-code" />
     </content>
     <orderEntry type="inheritedJdk" />
