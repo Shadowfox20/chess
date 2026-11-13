@@ -118,6 +118,8 @@ public class ClientMain {
                         if (request.body().length == 0) {
                             throw new InsufficientArgumentsError("create requires 1 argument - game name");
                         }
+                        String name = request.body()[0];
+                        create(authToken, name);
                     }
                     case "join" -> {
 
@@ -234,6 +236,19 @@ public class ClientMain {
                 System.out.println(httpResponse.body());
             }
             return null;
+        } catch (URISyntaxException | IOException | InterruptedException e) {
+            throw new ConnectException("There was an issue processing your request.");
+        }
+    }
+
+    private static void create(String authToken, String name) throws ConnectException {
+        String body = new Gson().toJson(Map.of("gameName", name));
+        try {
+            HttpResponse<String> httpResponse = sendRequest("/game", "POST", body, authToken);
+
+            if (httpResponse.statusCode() < 200 || httpResponse.statusCode() >= 300) {
+                System.out.println(httpResponse.body());
+            }
         } catch (URISyntaxException | IOException | InterruptedException e) {
             throw new ConnectException("There was an issue processing your request.");
         }
