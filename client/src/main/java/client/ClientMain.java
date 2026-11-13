@@ -1,7 +1,6 @@
 package client;
 
 import com.google.gson.Gson;
-import service.BadRequestException;
 
 import java.io.IOException;
 import java.net.ConnectException;
@@ -40,9 +39,9 @@ public class ClientMain {
         while (true) {
             System.out.print("[Logged Out] >> ");
             String raw = scanner.nextLine();
-            request request = parseRequest(raw);
 
             try {
+                request request = parseRequest(raw);
                 switch (request.command().toLowerCase(Locale.ROOT)) {
                     case "register" -> {
                         if (request.body().length < 3) {
@@ -51,7 +50,7 @@ public class ClientMain {
                         String username = request.body()[0];
                         String password = request.body()[1];
                         String email = request.body()[2];
-                        registerResponse response = register(username, password, email);
+                        loginResponse response = register(username, password, email);
                         boolean quit = loggedIn(scanner, response.username(), response.authToken());
                         if (quit) {
                             System.out.println("Until next time!");
@@ -64,7 +63,8 @@ public class ClientMain {
                         }
                         String username = request.body()[0];
                         String password = request.body()[1];
-                        boolean quit = loggedIn(scanner, username, password);
+                        loginResponse response = login(username, password);
+                        boolean quit = loggedIn(scanner, response.username(), response.authToken());
                         if (quit) {
                             System.out.println("Until next time!");
                             return;
@@ -105,9 +105,9 @@ public class ClientMain {
         while (true) {
             System.out.print("[" + username + "] >> ");
             String raw = scanner.nextLine();
-            request request = parseRequest(raw);
 
             try {
+                request request = parseRequest(raw);
                 switch (request.command().toLowerCase(Locale.ROOT)) {
                     case "create" -> {
                         if (request.body().length == 0) {
@@ -127,7 +127,6 @@ public class ClientMain {
                         return false;
                     }
                     case "quit" -> {
-                        System.out.println("Until next time!");
                         return true;
                     }
                     case "help" -> {
@@ -152,7 +151,7 @@ public class ClientMain {
                                 """);
                     }
                     default -> {
-                        System.out.println("Command not recognized. Type 'help' to see available commands.");
+                        System.out.println("Command not recognized. Enter \"help\" to see commands.");
                     }
                 }
             } catch (InsufficientArgumentsError e) {
@@ -161,9 +160,9 @@ public class ClientMain {
         }
     }
 
-    private record registerResponse(String authToken, String username) {}
+    private record loginResponse(String authToken, String username) {}
 
-    private static registerResponse register(String username, String password, String email) throws ConnectException {
+    private static loginResponse register(String username, String password, String email) throws ConnectException {
         String body = new Gson().toJson(Map.of("username", username, "password", password, "email", email));
         try {
             HttpRequest request = HttpRequest.newBuilder()
@@ -175,20 +174,42 @@ public class ClientMain {
             HttpResponse<String> httpResponse = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
             if (httpResponse.statusCode() >= 200 && httpResponse.statusCode() < 300) {
-                return new Gson().fromJson(httpResponse.body(), registerResponse.class);
+                return new Gson().fromJson(httpResponse.body(), loginResponse.class);
             } else {
                 System.out.println(httpResponse.body());
             }
-            return new registerResponse("failed", "");
+            return new loginResponse("failed", "");
         } catch (URISyntaxException | IOException | InterruptedException e) {
             throw new ConnectException("There was an issue processing your request.");
         }
     }
 
-    private static request parseRequest(String rawString) throws BadRequestException {
+    private static loginResponse login(String username, String password) throws ConnectException {
+        String body = new Gson().toJson(Map.of("username", username, "password", password));
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(new URI("http://localhost:8080/session"))
+                    .timeout(Duration.ofMillis(5000))
+                    .method("POST", HttpRequest.BodyPublishers.ofString(body))
+                    .build();
+
+            HttpResponse<String> httpResponse = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (httpResponse.statusCode() >= 200 && httpResponse.statusCode() < 300) {
+                return new Gson().fromJson(httpResponse.body(), loginResponse.class);
+            } else {
+                System.out.println(httpResponse.body());
+            }
+            return new loginResponse("failed", "");
+        } catch (URISyntaxException | IOException | InterruptedException e) {
+            throw new ConnectException("There was an issue processing your request.");
+        }
+    }
+
+    private static request parseRequest(String rawString) throws InsufficientArgumentsError {
         String[] split = rawString.split(" ");
         if (split.length == 0) {
-            throw new BadRequestException("please enter a command. enter \"help\" to see commands.");
+            throw new InsufficientArgumentsError("Please enter a command. Enter \"help\" to see commands.");
         }
         return new request(split[0], Arrays.copyOfRange(split, 1, split.length));
     }
