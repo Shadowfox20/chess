@@ -10,9 +10,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.Locale;
-import java.util.Map;import java.util.Scanner;
+import java.util.*;
+
 import chess.ChessPiece;
 import chess.ChessGame;
 
@@ -51,6 +50,9 @@ public class ClientMain {
                         String password = request.body()[1];
                         String email = request.body()[2];
                         loginResponse response = register(username, password, email);
+                        if (Objects.equals(response.authToken(), "failed")) {
+                            continue;
+                        }
                         boolean quit = loggedIn(scanner, response.username(), response.authToken());
                         if (quit) {
                             System.out.println("Until next time!");
@@ -64,6 +66,9 @@ public class ClientMain {
                         String username = request.body()[0];
                         String password = request.body()[1];
                         loginResponse response = login(username, password);
+                        if (Objects.equals(response.authToken(), "failed")) {
+                            continue;
+                        }
                         boolean quit = loggedIn(scanner, response.username(), response.authToken());
                         if (quit) {
                             System.out.println("Until next time!");
@@ -124,6 +129,7 @@ public class ClientMain {
 
                     }
                     case "logout" -> {
+                        logout(authToken);
                         return false;
                     }
                     case "quit" -> {
@@ -156,6 +162,8 @@ public class ClientMain {
                 }
             } catch (InsufficientArgumentsError e) {
                 System.out.println("Insufficient arguments: " + e);
+            } catch (ConnectException e) {
+                System.out.println("Unable to connect: " + e);
             }
         }
     }
@@ -165,13 +173,7 @@ public class ClientMain {
     private static loginResponse register(String username, String password, String email) throws ConnectException {
         String body = new Gson().toJson(Map.of("username", username, "password", password, "email", email));
         try {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(new URI("http://localhost:8080/user"))
-                    .timeout(Duration.ofMillis(5000))
-                    .method("POST", HttpRequest.BodyPublishers.ofString(body))
-                    .build();
-
-            HttpResponse<String> httpResponse = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> httpResponse = sendRequest("/user", "POST", body);
 
             if (httpResponse.statusCode() >= 200 && httpResponse.statusCode() < 300) {
                 return new Gson().fromJson(httpResponse.body(), loginResponse.class);
@@ -187,13 +189,7 @@ public class ClientMain {
     private static loginResponse login(String username, String password) throws ConnectException {
         String body = new Gson().toJson(Map.of("username", username, "password", password));
         try {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(new URI("http://localhost:8080/session"))
-                    .timeout(Duration.ofMillis(5000))
-                    .method("POST", HttpRequest.BodyPublishers.ofString(body))
-                    .build();
-
-            HttpResponse<String> httpResponse = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> httpResponse = sendRequest("/session", "POST", body);
 
             if (httpResponse.statusCode() >= 200 && httpResponse.statusCode() < 300) {
                 return new Gson().fromJson(httpResponse.body(), loginResponse.class);
@@ -204,6 +200,29 @@ public class ClientMain {
         } catch (URISyntaxException | IOException | InterruptedException e) {
             throw new ConnectException("There was an issue processing your request.");
         }
+    }
+
+    private static void logout(String authToken) throws ConnectException {
+        String body = new Gson().toJson(Map.of("authToken", authToken));
+        try {
+            HttpResponse<String> httpResponse = sendRequest("/session", "DELETE", body);
+
+            if (httpResponse.statusCode() < 200 || httpResponse.statusCode() >= 300) {
+                System.out.println(httpResponse.body());
+            }
+        } catch (URISyntaxException | IOException | InterruptedException e) {
+            throw new ConnectException("There was an issue processing your request.");
+        }
+    }
+
+    private static HttpResponse<String> sendRequest(String endpoint, String method, String body)
+            throws IOException, InterruptedException, URISyntaxException {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(new URI("http://localhost:8080" + endpoint))
+                .timeout(Duration.ofMillis(5000))
+                .method(method, HttpRequest.BodyPublishers.ofString(body))
+                .build();
+        return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
     }
 
     private static request parseRequest(String rawString) throws InsufficientArgumentsError {
