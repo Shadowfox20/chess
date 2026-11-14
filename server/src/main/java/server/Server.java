@@ -36,6 +36,10 @@ public class Server {
         }
     }
 
+    public void clearDB() throws DataAccessException {
+        DataService.clear(dataAccess);
+    }
+
     private void clearDB(Context context) {
         try {
             DataService.clear(dataAccess);
@@ -43,7 +47,6 @@ public class Server {
             context.status(500);
             context.result(serializer.toJson(Map.of("message", "Error: " + e.getMessage())));
         }
-
     }
 
     private void registerHandler(Context context) {

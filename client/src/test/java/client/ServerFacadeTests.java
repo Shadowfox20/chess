@@ -1,125 +1,89 @@
 package client;
 
+import dataaccess.DataAccessException;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.Assertions;
 import server.Server;
 
-import java.io.*;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
+import java.net.ConnectException;
 
 public class ServerFacadeTests {
-
     private static Server server;
-    private static ClientMain client;
+    private static ServerFacade facade;
 
     @BeforeAll
     public static void init() {
         server = new Server();
-        var port = server.run(0);
-        System.out.println("Started test HTTP server on " + port);
-        HttpClient httpClient = HttpClient.newHttpClient();
-        HttpRequest request = null;
         try {
-            request = HttpRequest.newBuilder()
-                    .uri(new URI("http://localhost:" + port + "/clear"))
-                    .timeout(Duration.ofMillis(5000))
-                    .GET()
-                    .build();
-            httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        } catch (IOException | InterruptedException | URISyntaxException e) {
+            server.clearDB();
+        } catch (DataAccessException e) {
             throw new RuntimeException(e);
         }
+        var port = server.run(0);
+        facade = new ServerFacade("http://localhost:" + port);
+        System.out.println("Started test HTTP server on " + port);
     }
 
     @AfterAll
     static void stopServer() {
         server.stop();
     }
-
+    
     @Test
     @Order(1)
-    @DisplayName("Test Input Happy Path")
-    public void TestInput_HappyPath() {
-        InputStream originalIn = System.in;
-
+    @DisplayName("login and register")
+    public void login() {
         try {
-            String simulatedInput = """
-                    help
-                    register TestInput_HappyPath p e
-                    help
-                    list
-                    create g
-                    list
-                    join 1 WHITE
-                    exit
-                    join 1 BLACK
-                    exit
-                    logout TestInput_HappyPath p
-                    login
-                    observe 1
-                    quit
-                    """;
-            ByteArrayInputStream testIn = new ByteArrayInputStream(
-                    simulatedInput.getBytes(StandardCharsets.UTF_8)
-            );
-            System.setIn(testIn);
-            System.setIn(new ByteArrayInputStream(simulatedInput.getBytes(StandardCharsets.UTF_8)));
-            ClientMain.main(null);
-        } finally {
-            System.setIn(originalIn);
+            var resp = facade.register("Test_Login", "p", "e");
+            Assertions.assertEquals("Test_Login", resp.username());
+            Assertions.assertNotEquals("failed", resp.authToken());
+            resp = facade.login("Test_Login", "p");
+            Assertions.assertEquals("Test_Login", resp.username());
+            Assertions.assertNotEquals("failed", resp.authToken());
+            // validate auth
+            facade.list(resp.authToken());
+
+            resp = facade.register("Test_Login", "np", "e");
+            Assertions.assertEquals("failed", resp.authToken());
+            resp = facade.login("Test_Login", "np");
+            Assertions.assertEquals("failed", resp.authToken());
+        } catch (ConnectException e) {
+            Assertions.fail("hit an unexpected error: " + e);
         }
     }
 
     @Test
     @Order(2)
-    @DisplayName("Test help")
-    public void TestInput_Help() {
-        assertTrue(testIO("""
-                    help
-                    quit
-                    """, "==================="));
-        assertTrue(testIO("""
-                    register TestInput_Help p e
-                    help
-                    quit
-                    """, "==================="));
+    @DisplayName("create and list game")
+    public void list() {
+        try {
+            var reg = facade.register("Test_List", "p", "e");
+            facade.create(reg.authToken(), "List Games Test");
+            var list = facade.list(reg.authToken());
+            boolean found = false;
+            for (var game : list.games()) {
+                if (game.gameName().equals("List Games Test")) {
+                    found = true;
+                    break;
+                }
+            }
+            Assertions.assertTrue(found);
+        } catch (ConnectException e) {
+            Assertions.fail("hit an unexpected error: " + e);
+        }
     }
 
     @Test
     @Order(3)
-    @DisplayName("Test register/login")
-    public void TestInput_Login() {
-        assertTrue(testIO("""
-                    register TestInput_Login p e
-                    quit
-                    """, "[TestInput_Login]"));
-        assertTrue(testIO("""
-                    login TestInput_Login
-                    quit
-                    """, "[TestInput_Login]"));
-    }
-
-    private boolean testIO(String input, String expectedOut) {
-        InputStream originalIn = System.in;
-        PrintStream originalOut = System.out;
+    @DisplayName("create and join game")
+    public void join() {
         try {
-            ByteArrayOutputStream outContent = new ByteArrayOutputStream();
-            System.setOut(new PrintStream(outContent, true, StandardCharsets.UTF_8));
-            System.setIn(new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8)));
-            ClientMain.main(null);
-            String actualOutput = outContent.toString(StandardCharsets.UTF_8);
-            return actualOutput.contains(expectedOut);
-        } finally {
-            System.setIn(originalIn);
-            System.setOut(originalOut);
+            var reg = facade.register("Test_Join", "p", "e");
+            var game = facade.create(reg.authToken(), "List Games Test");
+            Assertions.assertTrue(facade.join(reg.authToken(), String.valueOf(game.gameID()), "WHITE"));
+            Assertions.assertFalse(facade.join(reg.authToken(), String.valueOf(game.gameID()), "WHITE"));
+        } catch (ConnectException e) {
+            Assertions.fail("hit an unexpected error: " + e);
         }
     }
 }
