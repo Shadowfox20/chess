@@ -11,5 +11,6 @@
     <orderEntry type="library" name="google.code.gson" level="project" />
     <orderEntry type="module" module-name="shared" />
     <orderEntry type="module" module-name="server" />
+    <orderEntry type="library" scope="TEST" name="junit.jupiter" level="project" />
   </component>
 </module>

@@ -12,7 +12,6 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.*;
 
-import chess.ChessPiece;
 import chess.ChessGame;
 import ui.ChessDisplay;
 
@@ -77,7 +76,7 @@ public class ClientMain {
                     }
                     case "help" -> {
                         System.out.println("""
-                             //========================================+=============================\\\\
+                             \u001B[38;5;46m//========================================+=============================\\\\
                             || command [arguments]                     | description                  ||
                             ||=========================================|==============================||
                             || register [username] [password] [email]  | create an account            ||
@@ -87,7 +86,7 @@ public class ClientMain {
                             || quit                                    | exit program                 ||
                             |+-----------------------------------------+------------------------------+|
                             || help                                    | display commands             ||
-                             \\\\========================================+=============================//
+                             \\\\========================================+=============================//\u001b[0m
                             """);
                     }
                     case "quit" -> {
@@ -126,18 +125,23 @@ public class ClientMain {
                     }
                     case "join" -> {
                         if (request.body().length < 2) {
-                            throw new InsufficientArgumentsError("create requires 1 argument - game name");
+                            throw new InsufficientArgumentsError("create requires 2 argument - game ID and color (WHITE or BLACK)");
                         }
                         String gameID = request.body()[0];
                         String color = request.body()[1];
                         if (join(authToken, gameID, color)) {
                             System.out.println("Successfully joined! Opening game window...");
                             new ChessDisplay(new ChessGame()).display(color);
+                            inGame(scanner, username);
                         }
-                        inGame(scanner, username);
                     }
                     case "observe" -> {
-                        System.out.println("This command isn't ready yet...");
+                        if (request.body().length == 1) {
+                            throw new InsufficientArgumentsError("create requires 1 argument - game ID");
+                        }
+                        System.out.println("Successfully joined! Opening game window...");
+                        new ChessDisplay(new ChessGame()).display("WHITE");
+                        inGame(scanner, username);
                     }
                     case "list" -> {
                         gameList list = list(authToken);
@@ -157,7 +161,7 @@ public class ClientMain {
                         return true;
                     }
                     case "help" -> System.out.println("""
-                                 //========================================+===============================================\\\\
+                                 \u001B[38;5;46m//========================================+===============================================\\\\
                                 || command [arguments]                     | description                                    ||
                                 ||=========================================|================================================||
                                 || create [name]                           | start a new game with chosen name              ||
@@ -173,7 +177,7 @@ public class ClientMain {
                                 || quit                                    | exit program                                   ||
                                 |+-----------------------------------------+------------------------------------------------+|
                                 || help                                    | display commands                               ||
-                                 \\\\========================================+===============================================//
+                                 \\\\========================================+===============================================//\u001b[0m
                                 """);
                     default -> System.out.println("Command not recognized. Enter \"help\" to see commands.");
                 }
@@ -197,13 +201,13 @@ public class ClientMain {
                         return;
                     }
                     case "help" -> System.out.println("""
-                                 //========================================+===============================================\\\\
+                                 \u001B[38;5;46m//========================================+===============================================\\\\
                                 || command [arguments]                     | description                                    ||
                                 ||=========================================|================================================||
                                 || exit                                    | exit game                                      ||
                                 |+-----------------------------------------+------------------------------------------------+|
                                 || help                                    | display commands                               ||
-                                 \\\\========================================+===============================================//
+                                 \\\\========================================+===============================================//\u001b[0m
                                 """);
                     default -> System.out.println("Command not recognized. Enter \"help\" to see commands.");
                 }
